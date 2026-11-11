@@ -172,3 +172,27 @@ Frappe предоставляет REST API для DocTypes и методы RPC; 
 Уточнение 11.11.2026: пользователь подтвердил рыночную цель (U7). Порядок прежний — сначала внутренний результат, — но изоляция компаний, настраиваемые роли и процессы, отсутствие зашитых языка, валюты и налогов и импорт внешних BOM закладываются уже при построении V1: [ARC-01–ARC-04](../MVP-SPEC.md#21-решения-принимаемые-заранее-ради-рыночного-продукта). Из-за этого разбор лицензий из раздела 4 нужен до фиксации основы, а не после внутреннего результата (Q10).
 
 **Следующая развилка:** сохраняем ERPNext в основе или выбираем отдельный AV-контур с интеграциями. Решение принимается по прототипу и инструментам компании. Цель собственного продукта и функциональные ориентиры SI/Jetbuilt уже определены пользователем.
+
+## 9. Выбор основы 12 ноября 2026
+
+Пользователь выбрал гибрид Frappe + TypeScript (U8) и оставил ERPNext в ядре, чтобы улучшать его по опыту референс-продуктов (U9); итоговый стек — [MVP-SPEC §2.3](../MVP-SPEC.md#23-техническая-основа-и-стек). Ниже — что сравнивалось и какие факты проверены по репозиториям 12.11.2026. Ничего из перечисленного не запускалось.
+
+| Вариант | Сильная сторона | Почему не выбран как единственная основа |
+|---|---|---|
+| Собственное приложение TypeScript + PostgreSQL | Прямое внедрение JS-кода, RLS для изоляции компаний | Права, админку, журнал и отчёты пришлось бы писать самим |
+| Payload (MIT, Next.js, Postgres через Drizzle) | TypeScript-стек с админкой; плагины multi-tenant, MCP, S3, import-export | По происхождению CMS; ветка 4.0 в бете; учётные операции пишутся самостоятельно |
+| Django, Laravel + Filament | Зрелые фреймворки с админкой | Нет преимуществ перед Frappe для нашей задачи; Laravel — третий язык |
+| Odoo | Готовые бизнес-модули | Нужные модули в платной Enterprise; клиент должен сменить учёт |
+| NocoBase, Twenty, Directus | Готовые платформы | Собственная лицензия NocoBase 3, AGPL с коммерческими файлами у Twenty, source-available у Directus |
+| **Frappe + TypeScript/JS (выбран)** | Готовые права, DocType, Desk, Wiki, Gantt, MCP; фронтенды на TypeScript — штатный путь Frappe | Совместному редактированию нужен отдельный Node-сервис; изоляция компаний в Frappe — сайт на базу |
+
+Проверенные факты:
+
+- Frappe v16 требует Node ≥24 и запускает собственный Node-процесс socket.io; сборщик Desk (esbuild 0.14) понимает `.ts`, `.jsx`, `.vue`. [package.json v16.55.2](https://github.com/frappe/frappe/blob/v16.55.2/package.json)
+- Frappe CRM — отдельный фронтенд Vite + Vue + TypeScript с PWA ([vite.config.js](https://github.com/frappe/crm/blob/develop/frontend/vite.config.js)); Raven — React 19 + TypeScript + frappe-react-sdk ([raven](https://github.com/frappe/raven)). Оба под AGPL: устройство повторять можно, код копировать нельзя.
+- [frappe-ui](https://github.com/frappe/frappe-ui) (MIT, v1.1.0 от 29.10.2026): Vue 3, Tailwind 3, Reka UI, Tiptap; каркасы для компьютера и телефона, формы, списки, редактор, графики, слой данных для DocType. Дизайн-система [Espresso](https://frappe.io/design/espresso) с исходником в Figma. Gantt, Kanban и календаря как компонентов нет — они есть в Desk.
+- Встроенный MCP-сервер есть в Frappe v16.55.2 и отсутствует в v16.50.0 ([frappe/mcp](https://github.com/frappe/frappe/tree/v16.55.2/frappe/mcp)). Он создаёт, изменяет и удаляет документы и вызывает whitelisted-методы с правами пользователя; в настройках — только включение, имя и инструкции агенту. Спецификация MCP `2026-07-28` — последняя версия в [репозитории спецификации](https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification).
+- [Frappe Wiki](https://github.com/frappe/wiki) ветки `version-3` поддерживает Frappe v15 и v16; фронтенд Vue + frappe-ui + Tiptap.
+- Генератор TypeScript-типов для DocType [frappe-types](https://github.com/frappe/frappe-types) не обновлялся с мая 2024; типы, вероятно, придётся генерировать своим скриптом.
+
+Модули [HeyPuter/everything](https://github.com/HeyPuter/everything): все на чистом JS (Vite, Vitest), единственный сервер — Puter.js (файлы, KV, вход, события, workers). Лицензии: Projects, Wiki, Field Service — MIT (Field Service — «Early alpha»), Whiteboard и PDF — AGPL-3.0-only. Хранилище Wiki и Field Service скрыто за небольшим интерфейсом `backend.js`, что упрощает замену на API Frappe; Projects хранит данные в Puter KV и JSON-файлах с оптимистичным сохранением. Подробный план по модулям — MVP-SPEC §2.3 и [ADR-003](../.progressive/decisions/ADR-003-external-code-licensing.md).

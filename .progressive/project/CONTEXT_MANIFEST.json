@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "default": {
+    "required": [],
+    "skills": [],
+    "notes": [
+      "Product detail lives in MVP-SPEC.md (Russian); .progressive/project files are compact summaries that point to it.",
+      "Run results belong only in prototype/README.md."
+    ]
+  },
+  "phases": {
+    ".progressive/phases/00-technical-proof.md": {
+      "required": [
+        "PROTOTYPE-BRIEF.md",
+        "prototype/README.md"
+      ],
+      "skills": [
+        "security-sensitive-change"
+      ],
+      "notes": [
+        "Never delete Docker volumes, change pinned image digests, install host dependencies or reboot without explicit user approval."
+      ]
+    }
+  }
+}
