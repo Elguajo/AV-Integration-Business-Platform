@@ -1,0 +1,37 @@
+{
+  "doctype": "DocType",
+  "name": "AV Handover",
+  "module": "AV Platform",
+  "autoname": "AV-HO-.#####",
+  "is_submittable": 1,
+  "track_changes": 1,
+  "title_field": "project_name",
+  "field_order": ["quotation", "project_name", "project_manager", "customer_approval_reference", "start_authorization_reference", "commercial_section", "company", "customer", "currency", "accepted_value", "snapshot_sha256", "snapshot_json", "review_section", "review_status", "project", "reviewed_by", "reviewed_on", "review_note", "amended_from"],
+  "fields": [
+    {"fieldname": "quotation", "label": "Accepted quotation", "fieldtype": "Link", "options": "Quotation", "reqd": 1, "unique": 1, "set_only_once": 1, "in_list_view": 1},
+    {"fieldname": "project_name", "label": "Project name", "fieldtype": "Data", "reqd": 1, "in_list_view": 1},
+    {"fieldname": "project_manager", "label": "Assigned PM", "fieldtype": "Link", "options": "User", "reqd": 1, "in_list_view": 1},
+    {"fieldname": "customer_approval_reference", "label": "Customer approval evidence", "fieldtype": "Small Text", "reqd": 1, "description": "Reference to an external customer decision, date and authorized person. This field does not create a legal signature."},
+    {"fieldname": "start_authorization_reference", "label": "Start authorization evidence (if available)", "fieldtype": "Small Text", "description": "Separate from approval and advance payment. PM acceptance alone does not authorize purchasing or site work."},
+    {"fieldname": "commercial_section", "label": "Frozen commercial version", "fieldtype": "Section Break"},
+    {"fieldname": "company", "label": "Company", "fieldtype": "Link", "options": "Company", "read_only": 1},
+    {"fieldname": "customer", "label": "Customer", "fieldtype": "Link", "options": "Customer", "read_only": 1},
+    {"fieldname": "currency", "label": "Currency", "fieldtype": "Link", "options": "Currency", "read_only": 1},
+    {"fieldname": "accepted_value", "label": "Accepted quotation value", "fieldtype": "Currency", "options": "currency", "read_only": 1},
+    {"fieldname": "snapshot_sha256", "label": "Snapshot checksum", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "snapshot_json", "label": "Commercial snapshot", "fieldtype": "Code", "options": "JSON", "read_only": 1, "no_copy": 1},
+    {"fieldname": "review_section", "label": "PM decision", "fieldtype": "Section Break"},
+    {"fieldname": "review_status", "label": "Review status", "fieldtype": "Select", "options": "Pending\nAccepted\nReturned", "default": "Pending", "read_only": 1, "allow_on_submit": 1, "in_list_view": 1},
+    {"fieldname": "project", "label": "Project", "fieldtype": "Link", "options": "Project", "read_only": 1, "allow_on_submit": 1, "no_copy": 1},
+    {"fieldname": "reviewed_by", "label": "Reviewed by", "fieldtype": "Link", "options": "User", "read_only": 1, "allow_on_submit": 1, "no_copy": 1},
+    {"fieldname": "reviewed_on", "label": "Reviewed on", "fieldtype": "Datetime", "read_only": 1, "allow_on_submit": 1, "no_copy": 1},
+    {"fieldname": "review_note", "label": "PM comment", "fieldtype": "Small Text", "read_only": 1, "allow_on_submit": 1, "no_copy": 1},
+    {"fieldname": "amended_from", "label": "Amended from", "fieldtype": "Link", "options": "AV Handover", "read_only": 1, "no_copy": 1}
+  ],
+  "permissions": [
+    {"role": "AV Sales", "read": 1, "write": 1, "create": 1, "submit": 1, "delete": 1, "report": 1},
+    {"role": "AV Project Manager", "read": 1, "report": 1}
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC"
+}

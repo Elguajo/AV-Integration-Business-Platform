@@ -1,0 +1,22 @@
+[build-system]
+requires = ["flit_core>=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "av_platform"
+description = "Isolated AV integration platform proof of concept"
+authors = [{name = "AV Platform"}]
+requires-python = ">=3.14"
+dynamic = ["version"]
+dependencies = []
+
+[tool.bench.frappe-dependencies]
+frappe = ">=16.50.0,<17.0.0"
+erpnext = ">=16.53.0,<17.0.0"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
