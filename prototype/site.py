@@ -30,10 +30,11 @@ def main():
               os.environ["DB_ROOT_PASSWORD"], "--admin-password", os.environ["ADMIN_PASSWORD"],
               "--mariadb-user-host-login-scope=%", "--install-app", "erpnext")
     bench("--site", SITE, "set-config", "av_prototype", "1", "--parse")
-    bench("--site", SITE, "set-config", "mute_emails", "true", "--parse")
+    # --parse uses ast.literal_eval, so booleans must be Python literals.
+    bench("--site", SITE, "set-config", "mute_emails", "True", "--parse")
     bench("--site", SITE, "install-app", "av_platform")
     bench("--site", SITE, "migrate")
-    bench("--site", SITE, "set-config", "allow_tests", "true", "--parse")
+    bench("--site", SITE, "set-config", "allow_tests", "True", "--parse")
     bench("use", SITE)
     bench("version", "--format", "json")
 

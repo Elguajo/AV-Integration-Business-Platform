@@ -2,30 +2,44 @@
 
 Изолированный технический прототип по [постановке](../PROTOTYPE-BRIEF.md). Только синтетические данные. ERPNext выбран в ядро основы 12.11.2026 (MVP-SPEC U9), но его пригодность на наших сценариях не подтверждена; успешные локальные проверки Python не означают, что P0/P1 пройдены в ERPNext.
 
-## Состояние на 5 ноября 2026
+<a id="состояние-на-5-ноября-2026"></a>
 
-- Установлен Docker Desktop 4.98.0; Docker CLI 29.9.2 и Compose v5.6.1 отвечают.
-- Установщик включил VirtualMachinePlatform, WSL и Hyper-V и явно потребовал перезагрузку Windows. Перезагрузка не выполнялась.
-- Docker engine ещё недоступен. WSL-пакет пока не установлен: обычная установка отклонена из-за недостаточных прав; отдельная установка с повышением прав заблокирована автоматической проверкой среды.
-- Исходники AV-приложения, окружение, учебный сценарий, интеграционные проверки и проверка восстановления подготовлены. Сборка образа, запуск сайта, seed, проверки базы и браузера **не выполнены**.
-- Локально пройдены 8 проверок коммерческого снимка; Ruff 0.17.3; синтаксис Python, JavaScript и PowerShell; проверка JSON/TOML и конфигурации Docker Compose.
+## Состояние на 12 ноября 2026 (TP-01)
+
+Запуск выполнен на коммите `53bf241` с незакоммиченными исправлениями, перечисленными ниже. Windows 11, Docker Desktop: engine 29.9.2, Compose v5.6.1, WSL 3.0.5 (ядро 6.18.58.1), PowerShell 7.7.0.
 
 | ID | Вид | Статус | Основание |
 |---|---|---|---|
-| LOCAL-01 | Правила снимка | passed | `python -m unittest discover -s tests -v`: 8/8 |
-| LOCAL-02 | Статические проверки | passed | Ruff; compileall; node --check; PowerShell Parser; JSON/TOML; Compose config --quiet |
-| HOST-01 | Установка Docker | passed | install-log-admin.txt: Installation succeeded; CLI/Compose отвечают |
-| HOST-02 | Движок Linux | unavailable | docker info: отсутствует pipe; Windows требует перезагрузку; WSL-пакет отсутствует |
-| P0-RUNTIME | Сборка, запуск и restore | unavailable | Нужен HOST-02 |
-| P1-RUNTIME | Интеграционные проверки | unavailable | 11 тестов подготовлены; нужны сборка и сайт |
-| P1-BROWSER | Форма Sales/PM | unavailable | Сайт не запущен |
-| REVIEW-01 | Транзакции и доступ | inferred | Проверены исходники: row lock, unique quotation, savepoint rollback, запрет поддельного служебного флага, ограничения автора/PM; фактическая работа требует P1-RUNTIME |
+| LOCAL-01 | Правила снимка | PASS | `python -m unittest discover -s tests`: 8/8 |
+| LOCAL-02 | Статические проверки | NOT RUN | Ruff на хосте не установлен; последний запуск — 05.11.2026 |
+| HOST-02 | Движок Linux | PASS | После перезагрузки Windows и запуска Docker Desktop `docker info` отвечает; `manage.ps1 check` пройден |
+| P0-UP | Сборка и запуск | PASS | `manage.ps1 up`: образ собран, сайт `av.localhost` создан, 8 сервисов работают, `/api/method/ping` → `pong`. Первый запуск — FAIL (см. исправления) |
+| P0-SEED | Учебные данные | PASS | `manage.ps1 seed`: Q1 `SAL-QTN-2026-00001`, Q2 `SAL-QTN-2026-00002`, пакет `AV-HO-00001`, 16 000, статус Pending |
+| P0-REPEAT | Повторяемость | PASS | Повторные `up` (пять раз, с пересборкой образа) и `seed` вернули те же документы; Quotation = 2, AV Handover = 1 |
+| P1-RUNTIME | Интеграционные проверки | PASS | `manage.ps1 test`: 11/11 на Frappe 16.55.1 / MariaDB 11.8.3 |
+| P0-RESTORE | Backup и restore | NOT RUN | `manage.ps1 restore-check` не запускался |
+| P1-BROWSER | Форма Sales/PM | NOT RUN | Сайт доступен, сценарий в браузере не проходился |
+| P1-CONCURRENCY | Два независимых соединения | NOT RUN | Наличие блокировки в коде запуск не заменяет |
 
-## Запуск после перезагрузки
+Фактические версии (`bench version --format json` и команды в контейнерах): Frappe **16.55.1**, ERPNext 16.53.0, av_platform 0.1.0, Python 3.14.10, Node 24.22.2, MariaDB 11.8.3, Redis 7.4.6. Собранный образ `av-platform-prototype:0.1.0` — `sha256:8f4c9c59c32b0cf2efc64598d8b6158f7d124a2539e96330f3b27d9c002743f4` (linux/amd64, локальная сборка; идентификатор меняется при каждой пересборке). Digest MariaDB и Redis совпали с закреплёнными в `compose.yml`.
 
-1. Перезагрузить Windows в удобный момент и запустить Docker Desktop.
-2. Если Docker сообщает об отсутствии WSL, установить WSL в PowerShell с правами администратора: `wsl --install --no-distribution`. При запросе Windows повторно перезагрузить компьютер. [Инструкция Microsoft](https://learn.microsoft.com/windows/wsl/install), [инструкция Docker](https://docs.docker.com/desktop/setup/install/windows-install/).
-3. В PowerShell 7 из корня проекта выполнить:
+Исправления, без которых запуск не проходил:
+
+- `prototype/site.py` — `set-config ... --parse` разбирает значение через `ast.literal_eval`; `true` заменено на `True`.
+- `av_platform/demo.py` — ERPNext 16 не принимает группу-папку в Customer: назначены «Commercial» и «Uzbekistan»; перед созданием серийной позиции включается `enable_serial_and_batch_no_for_item` в Stock Settings.
+- `av_platform/permissions.py` — хук `has_permission` возвращал `None`, а Frappe 16.55.1 считает любое ложное значение отказом, поэтому AV Handover был закрыт всем, кроме Administrator. Теперь хук возвращает `True` для автора и назначенного PM и `False` для остальных; ролевые права проверяются после хука.
+- `test_av_handover.py` — добавлен `IGNORE_TEST_RECORD_DEPENDENCIES`: иначе Frappe обходит все связанные DocType и падает на `Payment Gateway` (приложение payments не установлено).
+- `prototype/manage.ps1` — убран `--skip-test-records`: с ним Frappe 16 завершается с кодом 0, **не запуская тесты**.
+
+Известный побочный эффект: диагностический запуск тестов до исправления создал в сайте штатные тестовые записи ERPNext (`_Test Company`, `_Test Customer` и другие; всего Company 22, Customer 13, Item 32, Project 1). Это синтетика ERPNext, учебные Q1/Q2/AV-HO-00001 не затронуты. Записи не удалялись. Тесты и учебные данные живут в одном сайте; отдельный тестовый сайт — вопрос следующих задач.
+
+Отчёт 05.11.2026 (Docker engine недоступен, runtime не запускался) заменён этим разделом; история — в Git.
+
+## Запуск
+
+1. Запустить Docker Desktop и дождаться работы движка.
+2. Если Docker сообщает об отсутствии WSL, установить WSL в PowerShell с правами администратора: `wsl --install --no-distribution`. При запросе Windows перезагрузить компьютер. [Инструкция Microsoft](https://learn.microsoft.com/windows/wsl/install), [инструкция Docker](https://docs.docker.com/desktop/setup/install/windows-install/).
+3. В PowerShell 7 (`pwsh`) из корня проекта выполнить:
 
 ```powershell
 .\prototype\manage.ps1 check
@@ -69,7 +83,7 @@ $env:PYTHONPATH = Join-Path (Get-Location) 'apps\av_platform'
 python -m unittest discover -s tests -v
 ```
 
-Интеграционные проверки запускаются через `manage.ps1 test` на настоящей Frappe/MariaDB: принятие/повтор, 16 000 и исключение альтернативы, изменение каталога, права другого PM и Sales, подделка служебного обновления, возврат с замечаниями, запрет принятия черновика, уникальность передачи, неизменность снимка и отсутствие проекта при недостаточных правах. Они подготовлены, но до запуска среды не считаются пройденными. Конкурентный вызов двумя независимыми соединениями и браузерный сценарий требуют отдельного запуска; наличие блокировки в коде их не заменяет.
+Интеграционные проверки запускаются через `manage.ps1 test` на настоящей Frappe/MariaDB: принятие/повтор, 16 000 и исключение альтернативы, изменение каталога, права другого PM и Sales, подделка служебного обновления, возврат с замечаниями, запрет принятия черновика, уникальность передачи, неизменность снимка и отсутствие проекта при недостаточных правах. 12.11.2026 пройдены 11/11. Конкурентный вызов двумя независимыми соединениями и браузерный сценарий требуют отдельного запуска; наличие блокировки в коде их не заменяет.
 
 `manage.ps1 backup` копирует базу, публичные/приватные файлы и конфигурацию в `.runtime`. `restore-check` создаёт приватный контрольный файл, делает backup, создаёт **новый** сайт `av-restore-<id>.localhost`, восстанавливает базу и файлы штатной командой Bench и сравнивает пакеты, связанные Quotation/Project и содержимое контрольного файла. Ключ шифрования переносится в конфигурацию новой копии. Исходный сайт не перезаписывается; восстановленная копия сохраняется для проверки. Сценарий не доказывает полноту ещё не реализованных складских/финансовых данных P8.
 
@@ -77,9 +91,9 @@ python -m unittest discover -s tests -v
 
 ## Зафиксированная основа
 
-Базовый образ: `frappe/erpnext:v16.53.0@sha256:b961d69ed3265f44f712f40be58a3e6a22c8662f61a7e1a8097765534e3e9be2`, digest получен из Docker Registry 05.11.2026. ERPNext tag `v16.53.0` указывает на `9cd11b19575bfc34f092a24f6c8b368c4dd69481`; его `pyproject.toml` требует Python >=3.14 и Frappe >=16.50.0,<17.0.0. Точная версия Frappe внутри зафиксированного образа будет записана командой `bench version --format json` после сборки; пока она не наблюдалась. Исходник Frappe `v16.55.2` (`3d1284c5fdb52207a516a49bbf2fd186cb43b3ab`) использован для проверки интерфейсов, а не как заявление о версии ещё не запущенного контейнера.
+Базовый образ: `frappe/erpnext:v16.53.0@sha256:b961d69ed3265f44f712f40be58a3e6a22c8662f61a7e1a8097765534e3e9be2`, digest получен из Docker Registry 05.11.2026. ERPNext tag `v16.53.0` указывает на `9cd11b19575bfc34f092a24f6c8b368c4dd69481`; его `pyproject.toml` требует Python >=3.14 и Frappe >=16.50.0,<17.0.0. Фактическая версия Frappe внутри образа — **16.55.1** (`bench version --format json`, 12.11.2026). Исходник Frappe `v16.55.2` (`3d1284c5fdb52207a516a49bbf2fd186cb43b3ab`) использовался для проверки интерфейсов до запуска; поведение хука прав и флага `--skip-test-records` сверено уже по исходникам внутри контейнера.
 
-MariaDB 11.8.3, Redis 7.4.6-alpine также закреплены digest, полученными из Docker Registry 05.11.2026. Их получение/совместная работа ещё не проверены движком Docker.
+MariaDB 11.8.3, Redis 7.4.6-alpine также закреплены digest, полученными из Docker Registry 05.11.2026. 12.11.2026 оба образа получены по этим digest и работают совместно с сайтом.
 
 Источники решений:
 
@@ -89,4 +103,4 @@ MariaDB 11.8.3, Redis 7.4.6-alpine также закреплены digest, по�
 - [Штатные альтернативы и передача Quotation](https://github.com/frappe/erpnext/blob/v16.53.0/erpnext/selling/doctype/quotation/quotation.py), [исключение альтернатив из суммы](https://github.com/frappe/erpnext/blob/v16.53.0/erpnext/controllers/taxes_and_totals.py).
 - [CLI создания/восстановления сайта](https://github.com/frappe/frappe/blob/v16.55.2/frappe/commands/site.py), [штатный backup](https://github.com/frappe/frappe/blob/v16.55.2/frappe/utils/backups.py).
 
-Следующий обязательный шаг после доступности Docker engine — собрать образ, записать фактические версии, запустить seed/интеграционные проверки/restore и проверить форму в браузере. До этого P0/P1 и пригодность ERPNext остаются **не подтверждены**.
+Следующие шаги — `restore-check`, сценарий P1 в браузере и конкурентный вызов двумя соединениями. До них P0/P1 пройдены только частично, а пригодность ERPNext остаётся **не подтверждена**.

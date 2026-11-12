@@ -4,8 +4,8 @@
 
 ### tp-01-r1
 Task: TP-01 — воспроизводимый запуск и запись версий
-Status: BLOCKED
-Freshness: UNCHECKED
+Status: DONE
+Freshness: CHECKED 12.11.2026
 Source: PROTOTYPE-BRIEF §8, задача TP-01
 Supersedes: NONE
 
@@ -26,10 +26,12 @@ Summary: закрыть TP Gate существующего среза Sales → 
 ```
 
 #### Freshness check
-Не выполнялась в этой сессии. Последнее известное состояние — отчёт 05.11.2026: Docker engine недоступен.
+12.11.2026: Docker engine 29.9.2 доступен после перезагрузки Windows и запуска Docker Desktop.
 
 #### Current checkpoint
-Ждёт пользователя: перезагрузить Windows, запустить Docker Desktop; при сообщении об отсутствии WSL — `wsl --install --no-distribution` в PowerShell администратора.
+Выполнено. Изменения в рабочем дереве не закоммичены.
 
 #### Outcome / evidence
-- 05.11.2026: HOST-02 unavailable (docker info: отсутствует pipe; WSL-пакет отсутствует) — prototype/README.md.
+- 05.11.2026: HOST-02 unavailable (docker info: отсутствует pipe; WSL-пакет отсутствует).
+- 12.11.2026: check PASS; up PASS после исправления `site.py`; seed PASS после исправлений `demo.py` и `permissions.py`; повторные up/seed сохранили данные (Quotation = 2, AV Handover = 1); `manage.ps1 test` 11/11 PASS после исправления теста и удаления `--skip-test-records`. Версии: Frappe 16.55.1, ERPNext 16.53.0, MariaDB 11.8.3, Redis 7.4.6. Свидетельства и побочный эффект (тестовые записи ERPNext в сайте) — prototype/README.md.
+- Не входило и NOT RUN: restore-check, браузер, конкурентность двумя соединениями (TP-02–TP-04).

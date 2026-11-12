@@ -48,7 +48,8 @@ def seed():
     })
     customer = _get_or_insert("Customer", "Synthetic P1 Customer", {
         "customer_name": "Synthetic P1 Customer", "customer_type": "Company",
-        "customer_group": "All Customer Groups", "territory": "All Territories",
+        # ERPNext rejects group (tree parent) customer groups on Customer; use fixture leaves.
+        "customer_group": "Commercial", "territory": "Uzbekistan",
     })
     sales = _user("sales@av-prototype.invalid", "Prototype Sales", ["Sales User", "AV Sales"],
                   os.environ.get("AV_SALES_PASSWORD"))
@@ -57,6 +58,8 @@ def seed():
     _get_or_insert("Price List", "AV Prototype USD", {
         "price_list_name": "AV Prototype USD", "selling": 1, "currency": "USD", "enabled": 1,
     })
+    # ERPNext 16 refuses has_serial_no on Item until serial/batch tracking is activated.
+    frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
     for code, label, stock in (
         ("AVP-M", "Synthetic serial device M", 1),
         ("AVP-SERVICES", "Synthetic P1 services", 0),

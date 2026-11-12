@@ -8,25 +8,27 @@ Outcome: IN PROGRESS
 Phase 00 — Technical Proof (TP Gate)
 
 ## Completed this session
-- Progressive Context Kit v4.0.0 установлен в режиме adopt-existing; память проекта восстановлена из MVP-SPEC и PROTOTYPE-BRIEF.
-- Записаны решения: основа Frappe + ERPNext в ядре + TypeScript/JS (ADR-001), ARC-01–ARC-04 (ADR-002), политика внешнего кода (ADR-003).
+- TP-01: Docker engine доступен; `manage.ps1 check/up/seed` и повторный запуск — PASS; `manage.ps1 test` — 11/11 PASS.
+- Фактические версии записаны в prototype/README.md: Frappe 16.55.1, ERPNext 16.53.0, MariaDB 11.8.3, Redis 7.4.6.
+- Исправлены `prototype/site.py`, `prototype/manage.ps1`, `av_platform/demo.py`, `av_platform/permissions.py`, `test_av_handover.py` (причины — prototype/README.md).
+- На хост установлен PowerShell 7.7.0 (рядом с 5.1) с согласия пользователя.
 
 ## Verification evidence
-- `python .progressive/tools/audit.py` → см. последний запуск в этой сессии
-- Runtime прототипа не запускался; последний отчёт 05.11.2026 — Docker engine недоступен.
+- prototype/README.md, раздел «Состояние на 12 ноября 2026 (TP-01)».
+- Ruff на хосте не установлен — статические проверки NOT RUN.
 
 ## Current working state
-BLOCKED
+RUNNABLE / GREEN
 
-- Why: Docker engine недоступен на машине разработчика (отчёт 05.11.2026: нужна перезагрузка Windows, пакет WSL не установлен); TP-01 нельзя выполнить.
-- First recovery action: пользователь перезагружает Windows и запускает Docker Desktop; затем агент выполняет `docker info` и TP-01.
+Изменения в рабочем дереве не закоммичены. Контейнеры `av-prototype` запущены.
 
 ## Blockers / uncertainty
-- Перезагрузка Windows и установка WSL — действие пользователя.
-- Фактическая версия Frappe в образе неизвестна (MCP есть только с 16.55).
+- В сайте прототипа остались штатные тестовые записи ERPNext (`_Test Company` и др.). Очистка требует решения пользователя (сброс сайта = удаление volumes).
+- MVP-SPEC §1 и PROTOTYPE-BRIEF (статус, строки P0/P1, §8) всё ещё описывают состояние 05.11.2026; MVP-SPEC меняется только с согласия пользователя.
+- Задания для TP-02–TP-04 в `00-technical-proof.prompts.md` ещё не написаны.
 
 ## Next action
-TP-01 — проверить доступность Docker engine и выполнить воспроизводимый запуск прототипа.
+TP-02 — целостность и полномочия Sales → PM: браузерный сценарий под Sales и PM и проверка всех read-путей (API, список, поиск, отчёт, экспорт, вложения). Сначала записать задание tp-02-r1 в `.progressive/phases/00-technical-proof.prompts.md` по PROTOTYPE-BRIEF §8.
 
 ## Active task prompt
-.progressive/phases/00-technical-proof.prompts.md#tp-01-r1
+NONE

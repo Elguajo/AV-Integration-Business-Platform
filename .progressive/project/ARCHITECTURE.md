@@ -28,7 +28,7 @@
 
 ## Current state (observed in repository)
 - Реализован только срез Sales → PM: DocType `AV Handover`, `commercial.py`, `permissions.py`; зависит от ERPNext (`required_apps = ["erpnext"]`), использует Quotation и Project.
-- Образ `frappe/erpnext:v16.53.0` по digest, MariaDB 11.8.3, Redis 7.4.6; фактическая версия Frappe не записана. Runtime ни разу не запускался (Docker engine/WSL недоступны на 05.11.2026).
+- Образ `frappe/erpnext:v16.53.0` по digest, MariaDB 11.8.3, Redis 7.4.6; фактическая версия Frappe в образе — 16.55.1. Runtime запущен 12.11.2026 (TP-01: up, seed, 11 Frappe-тестов — PASS; restore, браузер, конкурентность — NOT RUN).
 - Фронтендов на TypeScript, Hocuspocus и MCP пока нет.
 
 ## Sources of truth

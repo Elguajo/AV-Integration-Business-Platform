@@ -8,6 +8,10 @@ from frappe.tests import IntegrationTestCase
 from av_platform.av_platform.doctype.av_handover.av_handover import AVHandover, review_handover
 from av_platform.demo import seed
 
+# The suite builds its own synthetic data through seed(). Without this, Frappe walks every
+# linked DocType (Quotation -> ... -> Payment Gateway) and fails on apps that are not installed.
+IGNORE_TEST_RECORD_DEPENDENCIES = ["Quotation", "User", "Company", "Customer", "Currency", "Project"]
+
 
 class TestAVHandover(IntegrationTestCase):
     @classmethod

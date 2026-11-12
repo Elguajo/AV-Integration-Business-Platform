@@ -72,7 +72,8 @@ if ($Action -eq 'seed') {
     }
 }
 if ($Action -eq 'test') {
-    Compose exec -T backend bench --site av.localhost run-tests --app av_platform --skip-test-records
+    # Do not pass --skip-test-records: Frappe 16 exits 0 without running any test when it is set.
+    Compose exec -T backend bench --site av.localhost run-tests --app av_platform
 }
 if ($Action -eq 'backup') {
     Compose exec -T backend bench --site av.localhost backup --with-files
