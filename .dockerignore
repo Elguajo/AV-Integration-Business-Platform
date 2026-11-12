@@ -6,3 +6,4 @@
 research
 tests
 *.md
+apps/av_platform/frontend/node_modules
