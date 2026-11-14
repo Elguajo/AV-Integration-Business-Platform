@@ -166,6 +166,7 @@ C8 получен через содержимое поисковой выдач�
 | Аудит внедрения Everything 11.11.2026 и ответ пользователя «Да, записать» 12.11.2026 | E5 и U8; MVP-SPEC §2.3, Q9, research/03 §9, AGENTS.md. Основа выбрана: Frappe + TypeScript/JS | Модули и библиотеки не запускались; см. раздел 11 |
 | Слова пользователя 12.11.2026 о роли ERPNext: «Думаю стоит внедрить если можем улучшать его на основе опыта других референс продуктов» | U9; ERPNext в ядре, улучшения своим приложением без правки core (MVP-SPEC §2.3, Q9, ADR-001) | Лицензионные последствия GPL-3.0 для распространения — Q10; пригодность не проверена |
 | Ответ пользователя 14.11.2026 «Нет, только актуальную» на вопрос, можно ли передавать PM устаревшую версию предложения | U10; MVP-SPEC SAL-06; сервер `av_platform/versions.py`, AV Handover, Sales API | Версией в прототипе считается предложение того же клиента и компании (по времени создания) — H до модели сделки SAL-01; запрет принять устаревший пакет — H |
+| Слова пользователя 14.11.2026 «Чтобы не было две шуности», «Но мне нравится именно Desk как основной продукт», выбор «Вариант A» | U11; MVP-SPEC §2.3, ADR-004; страницы Desk `av-quotations`, `av-work-board`, `av-my-tasks`, меню `AV Sales`/`AV Projects`, сайт `/av` убран | Возможности Desk проверены по исходникам Frappe 16.55.1 и ERPNext 16; удобство на телефоне не проверено |
 | Поручение пользователя 12.11.2026 зафиксировать всё на основе [Progressive-Context-Kit](https://github.com/Elguajo/Progressive-Context-Kit) (v4.0.0, commit `bd1eed3`, MIT) | Кит установлен `init_project.py --adopt-existing`; память проекта в `.progressive/` (Brief, Architecture, Roadmap, фаза 00, NEXT_SESSION, ADR-001–003); AGENTS.md и CLAUDE.md объединены с профилем кита, прежняя версия — `.progressive/adoption-backup/` | Спецификации остаются главными для продуктовых сведений; `.progressive/project/` — компактные сводки со ссылками. Инструменты Semble, Serena, RTK и др. не устанавливались |
 
 ## 10. Учёт предоставленного аудита 11 ноября 2026
@@ -236,3 +237,30 @@ C8 получен через содержимое поисковой выдач�
 | W11 | Скриншоты пользователя 14.11.2026 | Устройство интерфейса ClickUp и YouGile в рабочих аккаунтах | Содержат реальные данные компании; в документы перенесено только устройство интерфейса |
 | W12 | Ручной просмотр ClickUp и YouGile во встроенном браузере, 14.11.2026 | Устройство доски, задачи, «Моих задач», Ганта, ролей; whiteboard ClickUp на tldraw | Только чтение, рабочие аккаунты пользователя; сценарии с изменением данных NOT RUN |
 | W13 | [tldraw LICENSE.md](https://github.com/tldraw/tldraw/blob/main/LICENSE.md), [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw) | tldraw — source-available, производство только по лицензии с ключом; Excalidraw — MIT | Проверено `gh api` 14.11.2026 |
+| W14 | Справка YouGile по доске: [колонки](https://help.yougile.com/books/baza-znanii-yougile/page/osnovnye-deistviia-s-kolonkami), [доски](https://help.yougile.com/books/baza-znanii-yougile/page/osnovnye-deistviia-s-doskami), [настройки доски](https://help.yougile.com/books/baza-znanii-yougile/page/nastroiki-doski), [ID](https://help.yougile.com/books/baza-znanii-yougile/page/id-zadac), [дедлайн](https://help.yougile.com/books/baza-znanii-yougile/page/dedlain), [стикеры с состояниями](https://help.yougile.com/books/baza-znanii-yougile/page/stikery-s-sostoyaniyami), [цвет](https://help.yougile.com/books/baza-znanii-yougile/page/cvetnye-zadaci), [массовые действия](https://help.yougile.com/books/baza-znanii-yougile/page/massovye-deistviia-s-zadacami), [шаблоны](https://help.yougile.com/books/baza-znanii-yougile/page/sablony-zadac), [передача](https://help.yougile.com/books/baza-znanii-yougile/page/peredaca-zadac), [колонка за исполнителем](https://help.yougile.com/books/baza-znanii-yougile/page/zakrepit-kolonku-za-ispolnitelem), [workflow](https://help.yougile.com/books/baza-znanii-yougile/page/workflow-nastroika-rabocego-processa), [сводки](https://help.yougile.com/books/baza-znanii-yougile/page/svodki) | Механики доски YouGile — research/07 §7.1 | Прочитано 14.11.2026 по сводкам страниц |
+| W15 | Повторный просмотр доски YouGile во встроенном браузере, 14.11.2026 (вход выполнил пользователь) | Действия на карточке, раскрытие подзадач, «Время в колонке», меню колонки и карточки, режим выделения, настройки доски — research/07 §7.1а | Только чтение; реальные данные не переносились; создание, перетаскивание и обновление у других — NOT RUN |
+| W16 | Метаданные Task в прототипе (`bench console`, ERPNext 16.53.0), 14.11.2026 | `track_changes = 0`, записей Version по Task нет; поля `color`, `parent_task`, `progress`, `type`; поля порядка нет — research/07 §7.3 | Прототип с синтетическими данными |
+
+Решение пользователя 14.11.2026 после разбора доски: «Я б сперва записал бы все что нашел потом поэтапно начал бы внедрять» → этапы BRD-1–BRD-7 в `.progressive/phases/00-technical-proof.md` (H).
+
+## 13. ИИ, шлюз моделей и локальный сервер, 14 ноября 2026
+
+Вопрос пользователя 14.11.2026 о внедрении ИИ через MCP и API с локальными и внешними провайдерами и об офисном сервере для моделей (U12). Решение — [ADR-005](../.progressive/decisions/ADR-005-ai-gateway-local-and-external-models.md), MVP-SPEC §2.3. Ничего не устанавливалось и не запускалось.
+
+| ID | Источник | Что подтверждает | Ограничение |
+|---|---|---|---|
+| A1 | [frappe/mcp в v16.55.1](https://github.com/frappe/frappe/tree/v16.55.1/frappe/mcp): `transport.py`, `server.py`, `tools/` | MCP есть в используемой версии; только пользователи Desk (гость — 403); инструменты discover, documents, methods; whitelisted-методы вызываются с правами пользователя | Исходники прочитаны `gh api`, MCP не запускался |
+| A2 | Дерево файлов Frappe v16.55.1 | Своего клиента языковых моделей во Frappe нет | Поиск по путям, не по содержимому |
+| A3 | [vllm-project/vllm](https://github.com/vllm-project/vllm), [sgl-project/sglang](https://github.com/sgl-project/sglang) | Apache-2.0; последние выпуски v0.33.0rc3 и v0.5.23 | Производительность на нашем оборудовании не измерялась |
+| A4 | [ollama/ollama](https://github.com/ollama/ollama), [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) | MIT; выпуски v0.40.16 и v1.0.0 | — |
+| A5 | [BerriAI/litellm LICENSE](https://github.com/BerriAI/litellm/blob/main/LICENSE) | MIT вне `enterprise/`; выпуск v1.109.1 | Функции шлюза по документации не сверялись |
+| A6 | [vercel/ai](https://github.com/vercel/ai), [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) | Apache-2.0; SDK MCP переходит с MIT на Apache-2.0 | Для ассистента на Python не обязательны |
+| A7 | [frappe/raven](https://github.com/frappe/raven), [Open WebUI LICENSE](https://github.com/open-webui/open-webui/blob/main/LICENSE) | Raven — AGPL-3.0; Open WebUI запрещает менять брендинг, кроме оговорённых исключений | Не встраиваются (ADR-003) |
+| A8 | Hugging Face API: модели openai, deepseek-ai, Qwen, mistralai, google | gpt-oss-20b/120b — Apache-2.0; DeepSeek V4.x — MIT; часть моделей Qwen и Mistral — «other» | Лицензию «other» читать перед выбором; качество на русском не проверялось |
+
+| Утверждение | Статус | Основание |
+|---|---|---|
+| Одна учётная запись ИИ подходит и для чата в продукте | MODIFIED | Общий ИИ-пользователь открыл бы полевым ролям коммерческие данные; чат работает в сессии человека с разрешённым ИИ списком инструментов (ADR-005) |
+| Локальные и внешние модели — через один шлюз | ACCEPTED | ADR-005; кандидат шлюза — LiteLLM (A5) |
+| Ollama для проверок, vLLM для работы многих пользователей | ACCEPTED (H) | Оценка по назначению проектов; замер на нашем оборудовании NOT RUN |
+| gpt-oss-120b помещается в одну GPU на 80 ГБ | NOT VERIFIED | Утверждение из описания модели, не проверено запуском |

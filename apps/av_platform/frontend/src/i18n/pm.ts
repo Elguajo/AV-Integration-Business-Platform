@@ -3,13 +3,6 @@
 import type { DueBucket, MoveRejection, MyTaskView } from '../pmApi'
 
 export const ruPm = {
-  role: 'PM',
-  nav: {
-    myTasks: 'Мои задачи',
-    board: 'Доска работ',
-    quotations: 'Предложения',
-    desk: 'Открыть Desk',
-  },
   page: {
     title: 'Доска работ',
     subtitle: 'Учебные данные · прототип',

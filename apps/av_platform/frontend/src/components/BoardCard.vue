@@ -45,7 +45,7 @@ function onDragStart(event: DragEvent) {
   >
     <div class="flex items-start justify-between gap-2">
       <a
-        :href="`/app/task/${encodeURIComponent(task.name)}`"
+        :href="`/desk/task/${encodeURIComponent(task.name)}`"
         target="_blank"
         rel="noopener"
         class="min-w-0 text-base-medium text-ink-gray-9 hover:underline"

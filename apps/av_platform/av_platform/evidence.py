@@ -51,6 +51,8 @@ def backup():
 
 
 ACCESS_ATTACHMENT = "av-tp02-synthetic-attachment.txt"
+ACCESS_TASK_ATTACHMENT = "av-tp02-synthetic-task-attachment.txt"
+ACCESS_PROJECT_ATTACHMENT = "av-tp02-synthetic-project-attachment.txt"
 ACCESS_USERS = {
     "AV_OTHER_PM_PASSWORD": ("other-pm@av-prototype.invalid", "Other PM",
                              ["Projects User", "AV Project Manager"]),
@@ -60,7 +62,8 @@ ACCESS_USERS = {
 
 
 def access_setup():
-    """Prepare the TP-02 read-path check: two unrelated users and a private attachment.
+    """Prepare the TP-02 read-path check: two unrelated users and private attachments on the
+    seed handover, a board task and the board project.
 
     Passwords come from the environment and are reset on every run; they are never stored.
     """
@@ -89,9 +92,34 @@ def access_setup():
             "attached_to_doctype": "AV Handover", "attached_to_name": handover.name,
             "content": "SYNTHETIC TP-02 ATTACHMENT\n",
         }).insert().name
+    board = frappe.db.get_value("Project", {"project_name": "AV-PROTOTYPE-T1 Board"},
+                                ["name", "project_name"], as_dict=True)
+    task = frappe.get_all("Task", filters={"project": board.name}, fields=["name", "subject"],
+                          order_by="name", limit=1)[0]
+    task_file = _attachment("Task", task.name, ACCESS_TASK_ATTACHMENT,
+                            "SYNTHETIC TP-02 TASK ATTACHMENT\n")
+    project_file = _attachment("Project", board.name, ACCESS_PROJECT_ATTACHMENT,
+                               "SYNTHETIC TP-02 PROJECT ATTACHMENT\n")
     frappe.db.commit()  # The HTTP check reads through separate web requests.
     return {"handover": handover.name, "snapshot_sha256": handover.snapshot_sha256,
             "project_name": handover.project_name, "quotation": seed_quote,
             "file": file_name,
             "file_url": frappe.db.get_value("File", file_name, "file_url"),
-            "owner": handover.owner, "project_manager": handover.project_manager}
+            "owner": handover.owner, "project_manager": handover.project_manager,
+            "board_project": board.name, "board_project_name": board.project_name,
+            "task": task.name, "task_subject": task.subject,
+            "task_file": task_file, "task_file_url": frappe.db.get_value("File", task_file, "file_url"),
+            "project_file": project_file,
+            "project_file_url": frappe.db.get_value("File", project_file, "file_url"),
+            "board_members": frappe.get_all("Project User", filters={"parent": board.name},
+                                            pluck="user")}
+
+
+def _attachment(doctype, name, file_name, content):
+    existing = frappe.db.get_value("File", {"attached_to_doctype": doctype, "attached_to_name": name,
+                                            "file_name": file_name})
+    if existing:
+        return existing
+    return frappe.get_doc({"doctype": "File", "file_name": file_name, "is_private": 1,
+                           "attached_to_doctype": doctype, "attached_to_name": name,
+                           "content": content}).insert().name

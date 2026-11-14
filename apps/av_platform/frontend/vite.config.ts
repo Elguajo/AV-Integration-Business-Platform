@@ -2,16 +2,25 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import frappeui from 'frappe-ui/vite'
 
-// The site serves the app on /av; the build writes assets to av_platform/public/frontend
-// and the page template to av_platform/www/av.html.
+// The role screens run inside Frappe Desk (ADR-004). The build writes one JavaScript entry
+// and its chunks to av_platform/public/frontend; av_platform.desk reads the Vite manifest at
+// boot so Desk pages can load the current hashed files.
 export default defineConfig({
   plugins: [
     frappeui({
-      frontendRoute: '/av',
-      // The prototype bench runs in Docker, so there is no local bench to proxy to.
+      // There is no standalone page and no local bench to proxy to (the bench runs in Docker).
       frappeProxy: false,
-      buildConfig: { indexHtmlPath: '../av_platform/www/av.html' },
+      jinjaBootData: false,
+      buildConfig: false,
     }),
     vue(),
   ],
+  base: '/assets/av_platform/frontend/',
+  build: {
+    outDir: '../av_platform/public/frontend',
+    emptyOutDir: true,
+    manifest: true,
+    sourcemap: false,
+    rollupOptions: { input: 'src/desk.ts' },
+  },
 })

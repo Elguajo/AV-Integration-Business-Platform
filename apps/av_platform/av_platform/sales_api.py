@@ -1,4 +1,4 @@
-"""Read models and actions for the Sales workspace (/av/sales).
+"""Read models and actions for the Sales workspace (Desk page av-quotations).
 
 The workspace only displays data and calls Frappe. Every decision (permissions, states,
 whether a handover is allowed) is taken here or in the AV Handover controller.
@@ -159,6 +159,11 @@ def get_quotation(name: str):
     exists = bool(visible) or bool(_existing_handover_quotations([quote.name]))
     if visible:
         visible["project_manager_name"] = _user_label(visible.project_manager)
+        # Projects are open to their participants only (permissions.py); Sales sees the name
+        # and gets a link only when it can open the project.
+        visible["project_readable"] = bool(visible.project) and frappe.has_permission(
+            "Project", "read", doc=visible.project
+        )
     current = current_versions([(quote.party_name, quote.company)]).get(
         (quote.party_name, quote.company)
     )

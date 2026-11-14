@@ -205,3 +205,17 @@ class TestAVHandover(IntegrationTestCase):
         self.assertEqual(frappe.db.count("Project", {"project_name": doc.project_name}), 0)
         self.assertEqual(frappe.db.get_value("AV Handover", doc.name, "review_status"), "Pending")
         self.assertFalse(frappe.db.get_value("AV Handover", doc.name, "project"))
+
+    def test_retry_after_failure_accepts_once(self):
+        # TP-03: the failed attempt leaves nothing that blocks or duplicates the retry.
+        doc = self.handover()
+        frappe.set_user(self.pm)
+        with patch.object(AVHandover, "before_update_after_submit",
+                          side_effect=frappe.ValidationError("Injected save failure")):
+            with self.assertRaises(frappe.ValidationError):
+                review_handover(doc.name, "accept")
+        result = review_handover(doc.name, "accept")
+        self.assertEqual(result["status"], "Accepted")
+        self.assertEqual(frappe.db.get_all("Project", filters={"project_name": doc.project_name},
+                                           pluck="name"), [result["project"]])
+        self.assertEqual(frappe.db.get_value("AV Handover", doc.name, "project"), result["project"])

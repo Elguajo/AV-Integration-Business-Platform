@@ -25,7 +25,7 @@ const handoverTheme = computed(() => {
 })
 
 function deskUrl(doctype: string, name: string) {
-  return `/app/${doctype}/${encodeURIComponent(name)}`
+  return `/desk/${doctype}/${encodeURIComponent(name)}`
 }
 
 async function onHandedOver() {
@@ -173,11 +173,13 @@ async function onHandedOver() {
               <dt class="text-ink-gray-5">{{ ru.detail.project }}</dt>
               <dd>
                 <a
+                  v-if="d.handover.project_readable"
                   class="text-ink-blue-link"
                   :href="deskUrl('project', d.handover.project)"
                   target="_blank"
                   rel="noopener"
                 >{{ d.handover.project }}</a>
+                <span v-else class="text-ink-gray-7">{{ d.handover.project }}</span>
               </dd>
             </template>
           </dl>

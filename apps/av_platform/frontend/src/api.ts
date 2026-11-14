@@ -26,6 +26,7 @@ export interface Handover {
   review_status: 'Pending' | 'Accepted' | 'Returned'
   docstatus: number
   project: string | null
+  project_readable?: boolean
   project_manager: string
   project_manager_name?: string
   reviewed_on: string | null

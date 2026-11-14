@@ -1,0 +1,27 @@
+{
+ "creation": "2026-11-14 12:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "",
+ "idx": 0,
+ "modified": "2026-11-14 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "AV Platform",
+ "name": "av-my-tasks",
+ "owner": "Administrator",
+ "page_name": "av-my-tasks",
+ "roles": [
+  {
+   "role": "Projects User"
+  },
+  {
+   "role": "Projects Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Мои задачи"
+}

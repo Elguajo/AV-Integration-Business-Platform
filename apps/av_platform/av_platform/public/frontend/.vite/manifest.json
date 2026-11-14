@@ -1,0 +1,102 @@
+{
+  "_ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js": {
+    "file": "assets/ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js",
+    "name": "ScrollArea.vue_vue_type_script_setup_true_lang",
+    "imports": [
+      "_format-C8Dmeuro.js",
+      "src/desk.ts"
+    ]
+  },
+  "_format-Bi9HlJSV.css": {
+    "file": "assets/format-Bi9HlJSV.css",
+    "src": "_format-Bi9HlJSV.css"
+  },
+  "_format-C8Dmeuro.js": {
+    "file": "assets/format-C8Dmeuro.js",
+    "name": "format",
+    "imports": [
+      "src/desk.ts"
+    ],
+    "css": [
+      "assets/format-Bi9HlJSV.css"
+    ]
+  },
+  "_pmApi-BvMwagb7.js": {
+    "file": "assets/pmApi-BvMwagb7.js",
+    "name": "pmApi",
+    "imports": [
+      "_format-C8Dmeuro.js",
+      "src/desk.ts"
+    ],
+    "css": [
+      "assets/pmApi-DD_H2tqz.css"
+    ]
+  },
+  "_pmApi-DD_H2tqz.css": {
+    "file": "assets/pmApi-DD_H2tqz.css",
+    "src": "_pmApi-DD_H2tqz.css"
+  },
+  "node_modules/frappe-ui/src/fonts/Inter/Inter-Italic.var.woff2": {
+    "file": "assets/Inter-Italic.var-BGHziHgI.woff2",
+    "src": "node_modules/frappe-ui/src/fonts/Inter/Inter-Italic.var.woff2"
+  },
+  "node_modules/frappe-ui/src/fonts/Inter/Inter.var.woff2": {
+    "file": "assets/Inter.var-C9xDBOS3.woff2",
+    "src": "node_modules/frappe-ui/src/fonts/Inter/Inter.var.woff2"
+  },
+  "src/desk.ts": {
+    "file": "assets/desk-D89K29uD.js",
+    "name": "desk",
+    "src": "src/desk.ts",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/pages/SalesWorkspace.vue",
+      "src/pages/ProjectBoard.vue",
+      "src/pages/MyTasks.vue"
+    ],
+    "css": [
+      "assets/desk-DCnrtFiV.css"
+    ],
+    "assets": [
+      "assets/Inter.var-C9xDBOS3.woff2",
+      "assets/Inter-Italic.var-BGHziHgI.woff2"
+    ]
+  },
+  "src/pages/MyTasks.vue": {
+    "file": "assets/MyTasks-B8URnzkT.js",
+    "name": "MyTasks",
+    "src": "src/pages/MyTasks.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/desk.ts",
+      "_pmApi-BvMwagb7.js",
+      "_format-C8Dmeuro.js"
+    ]
+  },
+  "src/pages/ProjectBoard.vue": {
+    "file": "assets/ProjectBoard-ChLoAVue.js",
+    "name": "ProjectBoard",
+    "src": "src/pages/ProjectBoard.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/desk.ts",
+      "_pmApi-BvMwagb7.js",
+      "_format-C8Dmeuro.js",
+      "_ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js"
+    ]
+  },
+  "src/pages/SalesWorkspace.vue": {
+    "file": "assets/SalesWorkspace-DRbkZze0.js",
+    "name": "SalesWorkspace",
+    "src": "src/pages/SalesWorkspace.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/desk.ts",
+      "_format-C8Dmeuro.js",
+      "_ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js"
+    ],
+    "css": [
+      "assets/SalesWorkspace-B2jw5Bxp.css"
+    ]
+  }
+}

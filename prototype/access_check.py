@@ -1,9 +1,10 @@
-"""TP-02 read-path check for AV Handover through the real web stack (nginx -> gunicorn).
+"""TP-02 read-path check through the real web stack (nginx -> gunicorn).
 
-Runs inside the backend container. Unrelated users must not see the seed handover through
-any read path; the owner and the assigned PM are positive controls. Read-only apart from
-access_setup (two synthetic users with fresh random passwords and one synthetic attachment).
-Prints a table without secrets and exits non-zero on FAIL.
+Runs inside the backend container. Targets: the seed AV Handover (visible to its author and the
+assigned PM) and the board project with one of its tasks (visible to project members). Every
+other user must not see them through any read path; allowed users are positive controls.
+Read-only apart from access_setup (two synthetic users with fresh random passwords and three
+synthetic attachments). Prints a table without secrets and exits non-zero on FAIL.
 """
 
 import http.cookiejar
@@ -19,7 +20,6 @@ import urllib.request
 
 BASE = "http://frontend:8080"
 SITE = "av.localhost"
-DOCTYPE = "AV Handover"
 
 
 def setup():
@@ -42,7 +42,7 @@ class Client:
         status, _ = self.request("POST", "/api/method/login", {"usr": user, "pwd": password})
         if status != 200:
             raise SystemExit(f"Login failed for {user}: HTTP {status}")
-        _, page = self.request("GET", "/app")
+        _, page = self.request("GET", "/desk")
         match = re.search(r'csrf_token\s*=\s*"([^"]+)"', page)
         self.csrf = match.group(1) if match else ""
 
@@ -64,60 +64,89 @@ class Client:
             return error.code, error.read().decode("utf-8", "replace")
 
 
-def probes(facts):
-    name = facts["handover"]
-    q = urllib.parse.quote
-    fields = json.dumps(["name", "snapshot_sha256", "project_name"])
-    by_name = json.dumps([[DOCTYPE, "name", "=", name]])
+def targets(facts):
+    def escaped(text):
+        return json.dumps(text)[1:-1]
+
     return [
-        ("REST v1 document", "GET", f"/api/resource/{q(DOCTYPE)}/{name}", None),
-        ("REST v2 document", "GET", f"/api/v2/document/{q(DOCTYPE)}/{name}", None),
-        ("REST v1 list", "GET", f"/api/resource/{q(DOCTYPE)}", {"fields": fields}),
-        ("REST v2 list", "GET", f"/api/v2/document/{q(DOCTYPE)}", {"fields": fields}),
+        {"doctype": "AV Handover", "name": facts["handover"],
+         "allowed": {facts["owner"], facts["project_manager"]},
+         "fields": ["name", "snapshot_sha256", "project_name"],
+         "markers": [facts["snapshot_sha256"], facts["project_name"], "SYNTHETIC TP-02 ATTACHMENT"],
+         "file": facts["file"], "file_url": facts["file_url"],
+         "search": ["AV-HO", facts["project_name"][:9]]},
+        {"doctype": "Project", "name": facts["board_project"],
+         "allowed": set(facts["board_members"]),
+         "fields": ["name", "project_name"],
+         "markers": [facts["board_project_name"], "SYNTHETIC TP-02 PROJECT ATTACHMENT"],
+         "file": facts["project_file"], "file_url": facts["project_file_url"],
+         "search": ["PROJ", "Board"]},
+        {"doctype": "Task", "name": facts["task"],
+         "allowed": set(facts["board_members"]),
+         "fields": ["name", "subject", "project"],
+         "markers": [facts["task_subject"], escaped(facts["task_subject"]),
+                     "SYNTHETIC TP-02 TASK ATTACHMENT"],
+         "file": facts["task_file"], "file_url": facts["task_file_url"],
+         "search": ["TASK", facts["task_subject"][:6]]},
+    ]
+
+
+def probes(target):
+    doctype, name = target["doctype"], target["name"]
+    q = urllib.parse.quote
+    fields = json.dumps(target["fields"])
+    by_name = json.dumps([[doctype, "name", "=", name]])
+    search_a, search_b = target["search"]
+    return [
+        ("REST v1 document", "GET", f"/api/resource/{q(doctype)}/{name}", None),
+        ("REST v2 document", "GET", f"/api/v2/document/{q(doctype)}/{name}", None),
+        ("REST v1 list", "GET", f"/api/resource/{q(doctype)}", {"fields": fields}),
+        ("REST v2 list", "GET", f"/api/v2/document/{q(doctype)}", {"fields": fields}),
         ("frappe.client.get", "GET", "/api/method/frappe.client.get",
-         {"doctype": DOCTYPE, "name": name}),
+         {"doctype": doctype, "name": name}),
         ("frappe.client.get_value", "GET", "/api/method/frappe.client.get_value",
-         {"doctype": DOCTYPE, "filters": json.dumps({"name": name}),
-          "fieldname": json.dumps(["snapshot_sha256", "project_name"])}),
+         {"doctype": doctype, "filters": json.dumps({"name": name}),
+          "fieldname": json.dumps(target["fields"][1:])}),
         ("frappe.client.get_list", "GET", "/api/method/frappe.client.get_list",
-         {"doctype": DOCTYPE, "fields": fields}),
+         {"doctype": doctype, "fields": fields}),
         ("Desk form load", "GET", "/api/method/frappe.desk.form.load.getdoc",
-         {"doctype": DOCTYPE, "name": name}),
+         {"doctype": doctype, "name": name}),
         ("Desk docinfo (versions/comments/files)", "GET",
-         "/api/method/frappe.desk.form.load.get_docinfo", {"doctype": DOCTYPE, "name": name}),
+         "/api/method/frappe.desk.form.load.get_docinfo", {"doctype": doctype, "name": name}),
         ("List/report view", "POST", "/api/method/frappe.desk.reportview.get",
-         {"doctype": DOCTYPE, "fields": fields, "filters": "[]"}),
+         {"doctype": doctype, "fields": fields, "filters": "[]"}),
         ("Report export CSV", "POST", "/api/method/frappe.desk.reportview.export_query",
-         {"doctype": DOCTYPE, "file_format_type": "CSV", "fields": fields, "filters": "[]",
+         {"doctype": doctype, "file_format_type": "CSV", "fields": fields, "filters": "[]",
           "title": "tp02"}),
         ("Group-by sidebar", "POST", "/api/method/frappe.desk.listview.get_group_by_count",
-         {"doctype": DOCTYPE, "current_filters": "[]", "field": "owner"}),
+         {"doctype": doctype, "current_filters": "[]", "field": "owner"}),
         ("Link search", "GET", "/api/method/frappe.desk.search.search_link",
-         {"doctype": DOCTYPE, "txt": "AV-HO"}),
+         {"doctype": doctype, "txt": search_a}),
         ("Link search by title", "GET", "/api/method/frappe.desk.search.search_link",
-         {"doctype": DOCTYPE, "txt": facts["project_name"][:9]}),
+         {"doctype": doctype, "txt": search_b}),
         ("Global search", "GET", "/api/method/frappe.utils.global_search.search",
-         {"text": facts["project_name"][:9]}),
-        ("Count", "GET", "/api/method/frappe.client.get_count", {"doctype": DOCTYPE}),
-        ("Print view", "GET", "/printview", {"doctype": DOCTYPE, "name": name}),
+         {"text": search_b}),
+        ("Count", "GET", "/api/method/frappe.client.get_count",
+         {"doctype": doctype, "filters": json.dumps({"name": name})}),
+        ("Print view", "GET", "/printview", {"doctype": doctype, "name": name}),
         ("Version history", "GET", "/api/resource/Version",
-         {"filters": json.dumps([["ref_doctype", "=", DOCTYPE], ["docname", "=", name]]),
+         {"filters": json.dumps([["ref_doctype", "=", doctype], ["docname", "=", name]]),
           "fields": json.dumps(["name", "docname", "data"])}),
-        ("Attachment File record", "GET", f"/api/resource/File/{facts['file']}", None),
-        ("Attachment private URL", "GET", facts["file_url"], None),
+        ("Attachment File record", "GET", f"/api/resource/File/{target['file']}", None),
+        ("Attachment private URL", "GET", target["file_url"], None),
         ("Attachment list by doc", "GET", "/api/resource/File",
          {"filters": json.dumps([["attached_to_name", "=", name]]),
           "fields": json.dumps(["name", "file_url"])}),
-        ("Filtered list by name", "GET", f"/api/resource/{q(DOCTYPE)}",
+        ("Filtered list by name", "GET", f"/api/resource/{q(doctype)}",
          {"filters": by_name, "fields": fields}),
     ]
 
 
-def leaked(body, facts, label, path, params):
+def leaked(body, target, label, path, params):
     # An error that repeats a name the caller supplied is not a leak; data fields are.
-    markers = [facts["snapshot_sha256"], facts["project_name"], "SYNTHETIC TP-02 ATTACHMENT"]
     supplied = path + json.dumps(params or {})
-    markers += [value for value in (facts["handover"], facts["file"]) if value not in supplied]
+    markers = list(target["markers"])
+    markers += [value for value in (target["name"], target["file"]) if value not in supplied]
     if label == "Count":
         try:
             return json.loads(body).get("message", 0) not in (0, None)
@@ -129,30 +158,29 @@ def leaked(body, facts, label, path, params):
 def main():
     facts, passwords = setup()
     users = [
-        ("owner Sales", facts["owner"], os.environ["AV_SALES_PASSWORD"], "control"),
-        ("assigned PM", facts["project_manager"], os.environ["AV_PM_PASSWORD"], "control"),
-        ("unassigned PM", "other-pm@av-prototype.invalid",
-         passwords["AV_OTHER_PM_PASSWORD"], "deny"),
-        ("other Sales", "other-sales@av-prototype.invalid",
-         passwords["AV_OTHER_SALES_PASSWORD"], "deny"),
+        ("owner Sales", facts["owner"], os.environ["AV_SALES_PASSWORD"]),
+        ("assigned PM", facts["project_manager"], os.environ["AV_PM_PASSWORD"]),
+        ("unassigned PM", "other-pm@av-prototype.invalid", passwords["AV_OTHER_PM_PASSWORD"]),
+        ("other Sales", "other-sales@av-prototype.invalid", passwords["AV_OTHER_SALES_PASSWORD"]),
     ]
     print(f"Handover {facts['handover']}; quotation {facts['quotation']}; "
-          f"attachment {facts['file']}")
-    print("| Path | User | HTTP | Sees handover | Result |")
-    print("|---|---|---|---|---|")
-    failures = 0
-    for label_user, user, password, expectation in users:
+          f"board project {facts['board_project']}; task {facts['task']}")
+    print("| Document | Path | User | HTTP | Sees it | Result |")
+    print("|---|---|---|---|---|---|")
+    failures = controls_seen = 0
+    for label_user, user, password in users:
         client = Client(user, password)
-        for label, method, path, params in probes(facts):
-            status, body = client.request(method, path, params)
-            seen = leaked(body, facts, label, path, params)
-            if expectation == "deny":
-                result = "FAIL" if seen else "PASS"
-            else:
-                result = "control"
-            failures += result == "FAIL"
-            print(f"| {label} | {label_user} | {status} | {'yes' if seen else 'no'} | {result} |")
-    print(f"Unrelated-user failures: {failures}")
+        for target in targets(facts):
+            allowed = user in target["allowed"]
+            for label, method, path, params in probes(target):
+                status, body = client.request(method, path, params)
+                seen = leaked(body, target, label, path, params)
+                result = "control" if allowed else ("FAIL" if seen else "PASS")
+                failures += result == "FAIL"
+                controls_seen += allowed and seen
+                print(f"| {target['doctype']} | {label} | {label_user} | {status} | "
+                      f"{'yes' if seen else 'no'} | {result} |")
+    print(f"Unrelated-user failures: {failures}; control reads that returned data: {controls_seen}")
     sys.exit(1 if failures else 0)
 
 

@@ -1,6 +1,6 @@
 param(
     [Parameter(Position=0)]
-    [ValidateSet('prepare','check','up','status','seed','test','access-check','backup','restore-check','down')]
+    [ValidateSet('prepare','check','up','status','seed','test','access-check','concurrency-check','backup','restore-check','down')]
     [string]$Action = 'status'
 )
 $ErrorActionPreference = 'Stop'
@@ -87,6 +87,20 @@ if ($Action -eq 'access-check') {
         Compose exec -T -e AV_SALES_PASSWORD -e AV_PM_PASSWORD backend ./env/bin/python /opt/av-prototype/access_check.py
     } finally {
         Remove-Item Env:AV_SALES_PASSWORD,Env:AV_PM_PASSWORD -ErrorAction SilentlyContinue
+    }
+}
+if ($Action -eq 'concurrency-check') {
+    # TP-03: simultaneous and interleaved PM accepts, failure after Project insert, retry.
+    try {
+        foreach ($line in Get-Content -LiteralPath $envFile) {
+            $name, $value = $line.Split('=', 2)
+            if ($name -eq 'AV_PM_PASSWORD') {
+                [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+            }
+        }
+        Compose exec -T -e AV_PM_PASSWORD backend ./env/bin/python /opt/av-prototype/concurrency_check.py
+    } finally {
+        Remove-Item Env:AV_PM_PASSWORD -ErrorAction SilentlyContinue
     }
 }
 if ($Action -eq 'backup') {

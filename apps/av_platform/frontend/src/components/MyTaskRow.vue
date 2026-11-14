@@ -38,7 +38,7 @@ const otherStages = computed(() =>
   >
     <div class="min-w-0 flex-1 basis-64">
       <a
-        :href="`/app/task/${encodeURIComponent(task.name)}`"
+        :href="`/desk/task/${encodeURIComponent(task.name)}`"
         target="_blank"
         rel="noopener"
         class="text-base-medium text-ink-gray-9 hover:underline"

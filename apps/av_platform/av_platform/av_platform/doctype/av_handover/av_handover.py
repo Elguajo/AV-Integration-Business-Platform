@@ -61,6 +61,18 @@ class AVHandover(Document):
             frappe.throw("Submitted handover history cannot be deleted.")
 
 
+def _read_committed_state():
+    """Let a repeated accept see the Project that a concurrent accept has just committed.
+
+    The handover row is read with a lock, so it shows the committed decision. Other reads of
+    the transaction use the MariaDB REPEATABLE READ snapshot, which a request may have taken
+    before the concurrent accept committed (TP-03: "Project ... not found"). A call that has
+    written nothing restarts its transaction; the decision is final, so the lock is not needed.
+    """
+    if not frappe.db.transaction_writes:
+        frappe.db.rollback()
+
+
 @frappe.whitelist(methods=["POST"])
 def review_handover(name: str, decision: str, note: str = ""):
     """The source row lock serializes retries and simultaneous PM decisions."""
@@ -77,6 +89,7 @@ def review_handover(name: str, decision: str, note: str = ""):
     expected = "Accepted" if decision == "accept" else "Returned"
     if handover.review_status == expected:
         if decision == "accept":
+            _read_committed_state()
             frappe.get_doc("Project", handover.project).check_permission("read")
         return {"handover": name, "status": expected, "project": handover.project}
     if handover.review_status != "Pending":

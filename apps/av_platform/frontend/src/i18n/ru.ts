@@ -2,12 +2,6 @@
 import type { Blocker, Stage } from '../api'
 
 export const ru = {
-  app: 'AV Platform',
-  role: 'Sales',
-  nav: {
-    quotations: 'Предложения',
-    desk: 'Открыть Desk',
-  },
   page: {
     title: 'Мои предложения',
     subtitle: 'Учебные данные · прототип',

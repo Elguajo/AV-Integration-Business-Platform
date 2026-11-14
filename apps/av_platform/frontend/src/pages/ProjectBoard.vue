@@ -3,14 +3,9 @@ import { computed, reactive, ref, watch } from 'vue'
 import {
   Button,
   Checkbox,
-  DesktopShell,
   ErrorMessage,
-  PageHeader,
   ScrollArea,
   Select,
-  Sidebar,
-  SidebarHeader,
-  SidebarItem,
   Skeleton,
   TextInput,
   toast,
@@ -149,8 +144,8 @@ const projectEmpty = computed(
 
 const newTaskHref = computed(() =>
   filters.project !== ANY
-    ? `/app/task/new?project=${encodeURIComponent(filters.project)}`
-    : '/app/task/new',
+    ? `/desk/task/new?project=${encodeURIComponent(filters.project)}`
+    : '/desk/task/new',
 )
 
 function replaceTask(task: BoardTask) {
@@ -195,135 +190,116 @@ function resetFilters() {
 </script>
 
 <template>
-  <div class="h-screen w-full bg-surface-base text-ink-gray-8">
-    <DesktopShell :scroll="false">
-      <template #sidebar>
-        <Sidebar width="14rem" class="border-r">
-          <SidebarHeader :title="ruPm.nav.board" :subtitle="board.data?.user.full_name ?? ruPm.role" />
-          <div class="space-y-0.5 px-2 pt-0.5">
-            <SidebarItem :label="ruPm.nav.myTasks" icon="lucide-list-checks" :route="{ name: 'MyTasks' }" />
-            <SidebarItem :label="ruPm.nav.board" icon="lucide-square-kanban" :route="{ name: 'Board' }" active />
-            <SidebarItem :label="ruPm.nav.quotations" icon="lucide-file-text" :route="{ name: 'Sales' }" />
-            <SidebarItem :label="ruPm.nav.desk" icon="lucide-external-link" href="/app" />
-          </div>
-        </Sidebar>
-      </template>
+  <div class="flex h-full flex-col bg-surface-base text-ink-gray-8">
+    <div class="flex items-center justify-between gap-2 px-5 pt-3">
+      <span class="hidden text-sm text-ink-gray-5 sm:inline">{{ ruPm.page.subtitle }}</span>
+      <div class="ml-auto flex items-center gap-2">
+        <Button
+          v-if="board.data?.can_move"
+          icon-left="lucide-plus"
+          :label="ruPm.page.newTask"
+          :href="newTaskHref"
+        />
+        <Button
+          icon-left="lucide-refresh-cw"
+          :label="ruPm.page.refresh"
+          :loading="board.loading"
+          @click="board.reload()"
+        />
+      </div>
+    </div>
 
-      <PageHeader>
-        <div class="flex w-full items-center justify-between gap-2">
-          <div class="flex min-w-0 items-baseline gap-3">
-            <h1 class="truncate text-lg-semibold text-ink-gray-9">{{ ruPm.page.title }}</h1>
-            <span class="hidden text-sm text-ink-gray-5 sm:inline">{{ ruPm.page.subtitle }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <Button
-              v-if="board.data?.can_move"
-              icon-left="lucide-plus"
-              :label="ruPm.page.newTask"
-              :href="newTaskHref"
-            />
-            <Button
-              icon-left="lucide-refresh-cw"
-              :label="ruPm.page.refresh"
-              :loading="board.loading"
-              @click="board.reload()"
-            />
-          </div>
-        </div>
-      </PageHeader>
+    <div class="flex min-h-0 flex-1 flex-col">
+      <div v-if="board.error" class="mx-auto max-w-xl px-5 pt-10">
+        <p class="text-lg-semibold text-ink-gray-8">{{ ruPm.error.title }}</p>
+        <p v-if="forbidden" class="mt-2 text-p-base text-ink-gray-6">{{ ruPm.error.forbidden }}</p>
+        <ErrorMessage v-else class="mt-2" :message="board.error" />
+      </div>
 
-      <div class="flex h-full min-h-0 flex-col">
-        <div v-if="board.error" class="mx-auto max-w-xl px-5 pt-10">
-          <p class="text-lg-semibold text-ink-gray-8">{{ ruPm.error.title }}</p>
-          <p v-if="forbidden" class="mt-2 text-p-base text-ink-gray-6">{{ ruPm.error.forbidden }}</p>
-          <ErrorMessage v-else class="mt-2" :message="board.error" />
-        </div>
+      <div v-else-if="board.loading && !board.data" class="flex gap-3 px-5 pt-5">
+        <Skeleton v-for="i in 5" :key="i" class="h-72 w-72 shrink-0 rounded-6" />
+      </div>
 
-        <div v-else-if="board.loading && !board.data" class="flex gap-3 px-5 pt-5">
-          <Skeleton v-for="i in 5" :key="i" class="h-72 w-72 shrink-0 rounded-6" />
+      <div
+        v-else-if="noProjects"
+        class="flex flex-col items-center justify-center gap-3 py-24 text-center"
+      >
+        <div class="rounded-full bg-surface-gray-2 p-3 text-ink-gray-5">
+          <span class="lucide-folder-kanban size-6" aria-hidden="true" />
         </div>
+        <p class="text-base text-ink-gray-7">{{ ruPm.empty.noProjects }}</p>
+        <p class="max-w-sm text-sm text-ink-gray-5">{{ ruPm.empty.noProjectsHint }}</p>
+      </div>
+
+      <template v-else-if="board.data">
+        <div class="flex flex-wrap items-end gap-2 px-5 pb-1 pt-4" role="search">
+          <Select v-model="filters.project" :options="projectOptions" :aria-label="ruPm.filter.project" class="w-56" />
+          <Select v-model="filters.assignee" :options="assigneeOptions" :aria-label="ruPm.filter.assignee" class="w-48" />
+          <TextInput
+            v-model="filters.place"
+            :placeholder="ruPm.filter.place"
+            :aria-label="ruPm.filter.place"
+            class="w-52"
+          />
+          <Select v-model="filters.due" :options="dueOptions" :aria-label="ruPm.filter.due" class="w-40" />
+          <Checkbox v-model="filters.blockedOnly" :label="ruPm.filter.blocked" class="h-7" />
+          <Button v-if="filtersActive" variant="ghost" :label="ruPm.filter.reset" @click="resetFilters" />
+        </div>
+        <p v-if="board.data.truncated" class="px-5 pt-1 text-sm text-ink-amber-7">{{ ruPm.truncated }}</p>
 
         <div
-          v-else-if="noProjects"
-          class="flex flex-col items-center justify-center gap-3 py-24 text-center"
+          v-if="projectEmpty"
+          class="flex flex-col items-center justify-center gap-3 py-20 text-center"
         >
-          <div class="rounded-full bg-surface-gray-2 p-3 text-ink-gray-5">
-            <span class="lucide-folder-kanban size-6" aria-hidden="true" />
-          </div>
-          <p class="text-base text-ink-gray-7">{{ ruPm.empty.noProjects }}</p>
-          <p class="max-w-sm text-sm text-ink-gray-5">{{ ruPm.empty.noProjectsHint }}</p>
+          <p class="text-base text-ink-gray-7">{{ ruPm.empty.noTasks }}</p>
+          <p class="text-sm text-ink-gray-5">{{ ruPm.empty.noTasksHint }}</p>
+          <Button
+            v-if="board.data.can_move"
+            variant="solid"
+            icon-left="lucide-plus"
+            :label="ruPm.page.newTask"
+            :href="newTaskHref"
+          />
         </div>
 
-        <template v-else-if="board.data">
-          <div class="flex flex-wrap items-end gap-2 px-5 pb-1 pt-4" role="search">
-            <Select v-model="filters.project" :options="projectOptions" :aria-label="ruPm.filter.project" class="w-56" />
-            <Select v-model="filters.assignee" :options="assigneeOptions" :aria-label="ruPm.filter.assignee" class="w-48" />
-            <TextInput
-              v-model="filters.place"
-              :placeholder="ruPm.filter.place"
-              :aria-label="ruPm.filter.place"
-              class="w-52"
-            />
-            <Select v-model="filters.due" :options="dueOptions" :aria-label="ruPm.filter.due" class="w-40" />
-            <Checkbox v-model="filters.blockedOnly" :label="ruPm.filter.blocked" class="h-7" />
-            <Button v-if="filtersActive" variant="ghost" :label="ruPm.filter.reset" @click="resetFilters" />
-          </div>
-          <p v-if="board.data.truncated" class="px-5 pt-1 text-sm text-ink-amber-7">{{ ruPm.truncated }}</p>
+        <div v-else-if="filtersActive && !visible.length" class="flex flex-col items-center gap-3 py-20 text-center">
+          <p class="text-base text-ink-gray-7">{{ ruPm.empty.filtered }}</p>
+          <Button :label="ruPm.filter.reset" @click="resetFilters" />
+        </div>
 
-          <div
-            v-if="projectEmpty"
-            class="flex flex-col items-center justify-center gap-3 py-20 text-center"
+        <div v-else class="flex min-h-0 flex-1 gap-3 overflow-x-auto px-5 pb-5 pt-3">
+          <section
+            v-for="column in columns"
+            :key="column.key"
+            class="flex w-72 shrink-0 flex-col rounded-6 bg-surface-gray-1 transition-shadow"
+            :class="{ 'ring-2 ring-outline-gray-3': dropTarget === column.key }"
+            :aria-label="column.label"
+            @dragover.prevent="dropTarget = column.key"
+            @dragleave="dropTarget = dropTarget === column.key ? null : dropTarget"
+            @drop.prevent="onDrop($event, column.key)"
           >
-            <p class="text-base text-ink-gray-7">{{ ruPm.empty.noTasks }}</p>
-            <p class="text-sm text-ink-gray-5">{{ ruPm.empty.noTasksHint }}</p>
-            <Button
-              v-if="board.data.can_move"
-              variant="solid"
-              icon-left="lucide-plus"
-              :label="ruPm.page.newTask"
-              :href="newTaskHref"
-            />
-          </div>
-
-          <div v-else-if="filtersActive && !visible.length" class="flex flex-col items-center gap-3 py-20 text-center">
-            <p class="text-base text-ink-gray-7">{{ ruPm.empty.filtered }}</p>
-            <Button :label="ruPm.filter.reset" @click="resetFilters" />
-          </div>
-
-          <div v-else class="flex min-h-0 flex-1 gap-3 overflow-x-auto px-5 pb-5 pt-3">
-            <section
-              v-for="column in columns"
-              :key="column.key"
-              class="flex w-72 shrink-0 flex-col rounded-6 bg-surface-gray-1 transition-shadow"
-              :class="{ 'ring-2 ring-outline-gray-3': dropTarget === column.key }"
-              :aria-label="column.label"
-              @dragover.prevent="dropTarget = column.key"
-              @dragleave="dropTarget = dropTarget === column.key ? null : dropTarget"
-              @drop.prevent="onDrop($event, column.key)"
-            >
-              <header class="flex items-center justify-between px-3 pb-2 pt-3">
-                <h2 class="text-base-semibold text-ink-gray-8">{{ column.label }}</h2>
-                <span class="text-sm tabular-nums text-ink-gray-5">{{ column.tasks.length }}</span>
-              </header>
-              <ScrollArea class="min-h-0 flex-1" viewport-class="space-y-2 px-2 pb-3">
-                <BoardCard
-                  v-for="task in column.tasks"
-                  :key="task.name"
-                  :task="task"
-                  :stages="board.data.stages"
-                  :project-name="filters.project === ANY && task.project ? projectNames.get(task.project) ?? task.project : null"
-                  :can-move="board.data.can_move"
-                  :saving="saving.has(task.name)"
-                  @move="moveTask(task.name, $event)"
-                />
-                <p v-if="!column.tasks.length" class="px-3 py-6 text-center text-p-sm text-ink-gray-4">
-                  {{ ruPm.column.empty }}
-                </p>
-              </ScrollArea>
-            </section>
-          </div>
-        </template>
-      </div>
-    </DesktopShell>
+            <header class="flex items-center justify-between px-3 pb-2 pt-3">
+              <h2 class="text-base-semibold text-ink-gray-8">{{ column.label }}</h2>
+              <span class="text-sm tabular-nums text-ink-gray-5">{{ column.tasks.length }}</span>
+            </header>
+            <ScrollArea class="min-h-0 flex-1" viewport-class="space-y-2 px-2 pb-3">
+              <BoardCard
+                v-for="task in column.tasks"
+                :key="task.name"
+                :task="task"
+                :stages="board.data.stages"
+                :project-name="filters.project === ANY && task.project ? projectNames.get(task.project) ?? task.project : null"
+                :can-move="board.data.can_move"
+                :saving="saving.has(task.name)"
+                @move="moveTask(task.name, $event)"
+              />
+              <p v-if="!column.tasks.length" class="px-3 py-6 text-center text-p-sm text-ink-gray-4">
+                {{ ruPm.column.empty }}
+              </p>
+            </ScrollArea>
+          </section>
+        </div>
+      </template>
+    </div>
   </div>
 </template>

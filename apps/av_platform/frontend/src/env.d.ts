@@ -8,5 +8,4 @@ declare module '*.vue' {
 
 interface Window {
   csrf_token?: string
-  av_user?: string
 }

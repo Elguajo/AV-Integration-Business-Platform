@@ -114,4 +114,5 @@ def can_see_task(task, user=None):
     user = user or frappe.session.user
     if sees_all_projects(user):
         return True
-    return (task.project and task.project in member_projects(user)) or task.name in assigned_tasks(user)
+    return (task.owner == user or (task.project and task.project in member_projects(user))
+            or task.name in assigned_tasks(user))
