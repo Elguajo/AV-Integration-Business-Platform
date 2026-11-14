@@ -264,3 +264,25 @@ C8 получен через содержимое поисковой выдач�
 | Локальные и внешние модели — через один шлюз | ACCEPTED | ADR-005; кандидат шлюза — LiteLLM (A5) |
 | Ollama для проверок, vLLM для работы многих пользователей | ACCEPTED (H) | Оценка по назначению проектов; замер на нашем оборудовании NOT RUN |
 | gpt-oss-120b помещается в одну GPU на 80 ГБ | NOT VERIFIED | Утверждение из описания модели, не проверено запуском |
+
+## 14. Офисный сервер и доступ из интернета, 14 ноября 2026
+
+Вопрос пользователя 14.11.2026: «Как сейчас можем то что уже есть загрузить на собственный сервер который будет находится в офисе с доступом к нем через интернет?» На вариант с VPN-приложением ответил: «Да пока хочу делать веб продукт не приложения»; затем: «Запиши это как будущее задачи потом вернемся к нему». Задача отложена как DEP-01 ([ROADMAP](../.progressive/project/ROADMAP.md#отложенные-задачи)). Ничего не устанавливалось и не запускалось.
+
+| ID | Источник | Что подтверждает | Ограничение |
+|---|---|---|---|
+| D1 | [prototype/compose.yml](../prototype/compose.yml), [prototype/Dockerfile](../prototype/Dockerfile), [prototype/site.py](../prototype/site.py) | Прототип целиком в Docker Compose (образ `frappe/erpnext:v16.53.0` + `av_platform`), nginx слушает только `127.0.0.1:8080`, сайт `av.localhost`, нет `restart`, включён `allow_tests`, управление — PowerShell `manage.ps1` | Для сервера нужен отдельный compose-файл и скрипт для Linux |
+| D2 | [frappe_docker: single-server example](https://github.com/frappe/frappe_docker/blob/main/docs/02-setup/07-single-server-example.md) | Официальная схема одного сервера: Linux (документация исходит из Ubuntu LTS), Docker + Compose v2, Traefik с Let's Encrypt | Прочитано `gh api`, не запускалось |
+| D3 | [frappe_docker: compose.https.yaml](https://github.com/frappe/frappe_docker/blob/main/overrides/compose.https.yaml) | Traefik v3.7, порты 80/443, сертификат Let's Encrypt через HTTP challenge | Нужны домен, статический IP и проброс портов |
+| D4 | [frappe_docker: compose.backup-cron.yaml](https://github.com/frappe/frappe_docker/blob/main/overrides/compose.backup-cron.yaml), [create backups](https://github.com/frappe/frappe_docker/blob/main/docs/11-how-to/04-create-backups.md) | Резервная копия по расписанию (`bench --site all backup`, по умолчанию каждые 6 ч), `--with-files` для файлов, restic для выноса копии | Образ `mcuadros/ofelia:latest` не закреплён по digest |
+| D5 | [Tailscale pricing](https://tailscale.com/pricing) | Personal — до 6 пользователей, только некоммерческое использование; Standard — $8 за пользователя в месяц | Требует приложение на каждом устройстве — отклонено пользователем |
+| D6 | [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/), [маршрутизация](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/), [тарифы Zero Trust](https://www.cloudflare.com/plans/sase-zero-trust.md) | `cloudflared` делает только исходящие соединения — входящие порты можно закрыть; адрес подключается DNS-записью CNAME; Zero Trust Free — до 50 пользователей | Карта при регистрации — по сообщениям сообщества, не проверено |
+| D7 | [Cloudflare SSL modes](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/) | Cloudflare держит два отдельных соединения: посетитель ↔ Cloudflare и Cloudflare ↔ сервер | Что трафик расшифровывается у Cloudflare — вывод, прямо на странице не написано |
+
+| Утверждение | Статус | Основание |
+|---|---|---|
+| Доступ сотрудников — только из браузера, без установки приложений | ACCEPTED | Слова пользователя 14.11.2026 |
+| Tailscale (VPN-приложение) | REJECTED | Требует приложение на устройствах (D5) |
+| Cloudflare Tunnel + Access — первый вариант для демо-стенда | PROPOSED (H) | Без белого IP и открытых портов, вход проверяется до страницы Frappe (D6) |
+| Свой домен + порт 443 + Let's Encrypt | DEFERRED (H) | Страница входа открыта всему интернету; не раньше пилота после PG-05/PG-08 (D3) |
+| Cloudflare допустим для реальных закрытых данных | OPEN | Вероятная расшифровка у Cloudflare (D7) противоречит ADR-005 «закрытые данные не покидают офис»; решить до Pilot Gate |

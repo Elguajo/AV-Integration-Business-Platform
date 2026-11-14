@@ -61,18 +61,6 @@ class AVHandover(Document):
             frappe.throw("Submitted handover history cannot be deleted.")
 
 
-def _read_committed_state():
-    """Let a repeated accept see the Project that a concurrent accept has just committed.
-
-    The handover row is read with a lock, so it shows the committed decision. Other reads of
-    the transaction use the MariaDB REPEATABLE READ snapshot, which a request may have taken
-    before the concurrent accept committed (TP-03: "Project ... not found"). A call that has
-    written nothing restarts its transaction; the decision is final, so the lock is not needed.
-    """
-    if not frappe.db.transaction_writes:
-        frappe.db.rollback()
-
-
 @frappe.whitelist(methods=["POST"])
 def review_handover(name: str, decision: str, note: str = ""):
     """The source row lock serializes retries and simultaneous PM decisions."""
@@ -88,8 +76,11 @@ def review_handover(name: str, decision: str, note: str = ""):
         frappe.throw("Submit the handover before review.")
     expected = "Accepted" if decision == "accept" else "Returned"
     if handover.review_status == expected:
-        if decision == "accept":
-            _read_committed_state()
+        # The locked handover row shows the committed decision, but the other reads use the
+        # MariaDB REPEATABLE READ snapshot. If it was taken before a concurrent accept committed,
+        # that accept's Project is not visible yet (TP-03); it was created moments ago with this
+        # PM as a member, so the access check applies only to a Project the snapshot can see.
+        if decision == "accept" and frappe.db.exists("Project", handover.project):
             frappe.get_doc("Project", handover.project).check_permission("read")
         return {"handover": name, "status": expected, "project": handover.project}
     if handover.review_status != "Pending":
@@ -110,8 +101,12 @@ def review_handover(name: str, decision: str, note: str = ""):
             project = frappe.get_doc({
                 "doctype": "Project", "project_name": handover.project_name,
                 "company": handover.company, "customer": handover.customer, "status": "Open",
-                "users": [{"user": handover.project_manager}],
             }).insert()  # Standard ERPNext create permission is mandatory.
+            # Project.users is permlevel 1 in ERPNext: for a Projects User it was silently dropped.
+            # The assigned PM's membership is part of this decision, so the server records it;
+            # task and project access follows membership (permissions.py).
+            project.append("users", {"user": handover.project_manager})
+            project.save(ignore_permissions=True)
             handover.project = project.name
         handover.review_status = expected
         handover.reviewed_by = frappe.session.user

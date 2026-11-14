@@ -1,6 +1,7 @@
 // Shapes returned by av_platform.pm_api (project work board, PM-01).
 // The server owns every decision; the client only renders these values.
 
+// One set of codes for every card action (move, rename, assign); texts live in i18n.
 export type MoveRejection =
   | 'no_permission'
   | 'unknown_stage'
@@ -8,6 +9,16 @@ export type MoveRejection =
   | 'conflict'
   | 'blocked'
   | 'dependencies_open'
+  | 'invalid_subject'
+  | 'assign_forbidden'
+  | 'assignee_not_member'
+
+export type DueState = 'overdue' | 'today' | 'soon'
+
+export interface Person {
+  name: string
+  full_name: string | null
+}
 
 export interface BoardStage {
   name: string
@@ -29,17 +40,26 @@ export interface BoardTask {
   end: string | null
   is_overdue: boolean
   is_milestone: boolean
-  assignees: { name: string; full_name: string | null }[]
+  assignees: Person[]
   modified: string
+  due_state: DueState | null
+  comments: number
+  subtasks: { done: number; total: number } | null
 }
 
 export interface Board {
-  user: { name: string; full_name: string | null }
+  user: Person
   stages: BoardStage[]
-  projects: { name: string; project_name: string }[]
+  projects: { name: string; project_name: string; members: Person[] }[]
   tasks: BoardTask[]
   truncated: boolean
   can_move: boolean
+  can_assign_others: boolean
+}
+
+export interface Subtasks {
+  task: string
+  tasks: BoardTask[]
 }
 
 // "My tasks" (PM-02): the server assigns the due-date group using its own day.
@@ -68,5 +88,13 @@ export type MoveResult =
 export const PM_API = {
   board: '/api/v2/method/av_platform.pm_api.get_board',
   move: '/api/v2/method/av_platform.pm_api.move_task',
+  rename: '/api/v2/method/av_platform.pm_api.rename_task',
+  assign: '/api/v2/method/av_platform.pm_api.assign_task',
+  unassign: '/api/v2/method/av_platform.pm_api.unassign_task',
+  subtasks: '/api/v2/method/av_platform.pm_api.get_subtasks',
   myTasks: '/api/v2/method/av_platform.pm_api.get_my_tasks',
+}
+
+export function deskTaskUrl(name: string) {
+  return `/desk/task/${encodeURIComponent(name)}`
 }

@@ -1,18 +1,14 @@
 {
-  "_ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js": {
-    "file": "assets/ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js",
+  "_ScrollArea.vue_vue_type_script_setup_true_lang-Dy0-9Ebb.js": {
+    "file": "assets/ScrollArea.vue_vue_type_script_setup_true_lang-Dy0-9Ebb.js",
     "name": "ScrollArea.vue_vue_type_script_setup_true_lang",
     "imports": [
-      "_format-C8Dmeuro.js",
+      "_format-8JxQZ2F6.js",
       "src/desk.ts"
     ]
   },
-  "_format-Bi9HlJSV.css": {
-    "file": "assets/format-Bi9HlJSV.css",
-    "src": "_format-Bi9HlJSV.css"
-  },
-  "_format-C8Dmeuro.js": {
-    "file": "assets/format-C8Dmeuro.js",
+  "_format-8JxQZ2F6.js": {
+    "file": "assets/format-8JxQZ2F6.js",
     "name": "format",
     "imports": [
       "src/desk.ts"
@@ -21,11 +17,15 @@
       "assets/format-Bi9HlJSV.css"
     ]
   },
-  "_pmApi-BvMwagb7.js": {
-    "file": "assets/pmApi-BvMwagb7.js",
+  "_format-Bi9HlJSV.css": {
+    "file": "assets/format-Bi9HlJSV.css",
+    "src": "_format-Bi9HlJSV.css"
+  },
+  "_pmApi-BbxnpzPW.js": {
+    "file": "assets/pmApi-BbxnpzPW.js",
     "name": "pmApi",
     "imports": [
-      "_format-C8Dmeuro.js",
+      "_format-8JxQZ2F6.js",
       "src/desk.ts"
     ],
     "css": [
@@ -45,7 +45,7 @@
     "src": "node_modules/frappe-ui/src/fonts/Inter/Inter.var.woff2"
   },
   "src/desk.ts": {
-    "file": "assets/desk-D89K29uD.js",
+    "file": "assets/desk-XTWezEC8.js",
     "name": "desk",
     "src": "src/desk.ts",
     "isEntry": true,
@@ -55,7 +55,7 @@
       "src/pages/MyTasks.vue"
     ],
     "css": [
-      "assets/desk-DCnrtFiV.css"
+      "assets/desk-ChiD-oeJ.css"
     ],
     "assets": [
       "assets/Inter.var-C9xDBOS3.woff2",
@@ -63,37 +63,37 @@
     ]
   },
   "src/pages/MyTasks.vue": {
-    "file": "assets/MyTasks-B8URnzkT.js",
+    "file": "assets/MyTasks-Bx-99nCE.js",
     "name": "MyTasks",
     "src": "src/pages/MyTasks.vue",
     "isDynamicEntry": true,
     "imports": [
       "src/desk.ts",
-      "_pmApi-BvMwagb7.js",
-      "_format-C8Dmeuro.js"
+      "_pmApi-BbxnpzPW.js",
+      "_format-8JxQZ2F6.js"
     ]
   },
   "src/pages/ProjectBoard.vue": {
-    "file": "assets/ProjectBoard-ChLoAVue.js",
+    "file": "assets/ProjectBoard-BOJ0rQFD.js",
     "name": "ProjectBoard",
     "src": "src/pages/ProjectBoard.vue",
     "isDynamicEntry": true,
     "imports": [
       "src/desk.ts",
-      "_pmApi-BvMwagb7.js",
-      "_format-C8Dmeuro.js",
-      "_ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js"
+      "_pmApi-BbxnpzPW.js",
+      "_format-8JxQZ2F6.js",
+      "_ScrollArea.vue_vue_type_script_setup_true_lang-Dy0-9Ebb.js"
     ]
   },
   "src/pages/SalesWorkspace.vue": {
-    "file": "assets/SalesWorkspace-DRbkZze0.js",
+    "file": "assets/SalesWorkspace-CPli1jhA.js",
     "name": "SalesWorkspace",
     "src": "src/pages/SalesWorkspace.vue",
     "isDynamicEntry": true,
     "imports": [
       "src/desk.ts",
-      "_format-C8Dmeuro.js",
-      "_ScrollArea.vue_vue_type_script_setup_true_lang-Cz50B7QE.js"
+      "_format-8JxQZ2F6.js",
+      "_ScrollArea.vue_vue_type_script_setup_true_lang-Dy0-9Ebb.js"
     ],
     "css": [
       "assets/SalesWorkspace-B2jw5Bxp.css"

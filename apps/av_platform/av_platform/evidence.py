@@ -31,7 +31,17 @@ def manifest():
             content = content.encode("utf-8")
         files.append({"name": doc.name, "file_url": doc.file_url, "is_private": doc.is_private,
                       "sha256": hashlib.sha256(content).hexdigest()})
-    return {"handovers": handovers, "quotations": quotations, "projects": projects, "files": files}
+    # The work board (PM-01/PM-02) and project membership (TP-02 access rule) are part of the slice.
+    tasks = frappe.get_all("Task", fields=[
+        "name", "subject", "project", "status", "av_stage", "av_block_reason", "exp_end_date",
+        "owner", "_assign",
+    ], order_by="name")
+    project_users = frappe.get_all("Project User", filters={"parenttype": "Project"},
+                                   fields=["parent", "user"], order_by="parent, user")
+    stages = frappe.get_all("AV Work Stage", fields=["name", "label", "sequence", "task_status",
+                                                     "enabled", "is_closed"], order_by="name")
+    return {"handovers": handovers, "quotations": quotations, "projects": projects, "files": files,
+            "tasks": tasks, "project_users": project_users, "stages": stages}
 
 
 def backup():

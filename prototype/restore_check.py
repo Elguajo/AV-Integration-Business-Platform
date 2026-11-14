@@ -42,9 +42,13 @@ def main():
           "--with-private-files", backup["private_files"])
     bench("--site", target, "migrate")
     restored = execute(target, "av_platform.evidence.manifest")
+    before = backup["manifest"]
     result = {"source": SOURCE, "restored_site": target,
-              "passed": backup["manifest"] == restored,
-              "scope": "handover snapshots, linked quotations/projects, private canary content"}
+              "passed": before == restored,
+              "compared": {key: len(value) for key, value in before.items()},
+              "differs": sorted(key for key in before.keys() | restored.keys()
+                                if before.get(key) != restored.get(key)),
+              "scope": "handover snapshots, linked quotations/projects, tasks and board stages, project members, private canary content"}
     output_dir = Path("sites") / SOURCE / "private" / "backups"
     (output_dir / f"{target}-result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result))

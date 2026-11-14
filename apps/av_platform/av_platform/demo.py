@@ -164,4 +164,49 @@ def _seed_board(company, customer, pm):
         if stage != "done":
             assign_to.add({"assign_to": [pm], "doctype": "Task", "name": task.name,
                            "description": subject})
+    _seed_card_details(project_name, company, names, pm)
     return project_name
+
+
+# Card details for BRD-1: subtasks, a comment and a second project member to assign.
+# (parent subject, ((subtask subject, stage, end offset), ...))
+BOARD_SUBTASKS = (
+    ("Монтаж дисплеев", (
+        ("Кронштейны A1–A3", "done", 5),
+        ("Подвод питания к дисплеям", "in_progress", 7),
+        ("Навеска и подключение дисплеев", "planned", 8),
+    )),
+)
+BOARD_COMMENT = ("Схема видеотракта", "SYNTHETIC: схема согласована с проектировщиком, ждём подписи PM.")
+INSTALLER = ("installer@av-prototype.invalid", "Учебный монтажник")
+
+
+def _seed_card_details(project_name, company, names, pm):
+    email, first_name = INSTALLER
+    # A member without a password: they can be assigned on the board but cannot sign in.
+    _get_or_insert("User", email, {
+        "email": email, "first_name": first_name, "send_welcome_email": 0,
+        "user_type": "System User", "roles": [{"role": "Projects User"}],
+    })
+    project = frappe.get_doc("Project", project_name)
+    if email not in {row.user for row in project.users}:
+        project.append("users", {"user": email})
+        project.save()
+
+    for parent_subject, subtasks in BOARD_SUBTASKS:
+        parent = names[parent_subject]
+        if not frappe.db.get_value("Task", parent, "is_group"):
+            frappe.db.set_value("Task", parent, "is_group", 1)
+        for subject, stage, end in subtasks:
+            if frappe.db.exists("Task", {"project": project_name, "subject": subject}):
+                continue
+            frappe.get_doc({
+                "doctype": "Task", "subject": subject, "project": project_name, "company": company,
+                "parent_task": parent, "av_stage": stage, "exp_end_date": add_days(today(), end),
+            }).insert()
+
+    subject, text = BOARD_COMMENT
+    task = names[subject]
+    if not frappe.db.exists("Comment", {"reference_doctype": "Task", "reference_name": task,
+                                        "comment_type": "Comment"}):
+        frappe.get_doc("Task", task).add_comment("Comment", text, comment_email=pm)

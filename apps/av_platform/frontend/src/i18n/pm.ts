@@ -1,6 +1,6 @@
 // Interface texts of the project work board (ARC-03). Stage labels come from the server
 // (AV Work Stage is a setting), so only fixed interface texts live here.
-import type { DueBucket, MoveRejection, MyTaskView } from '../pmApi'
+import type { DueBucket, DueState, MoveRejection, MyTaskView } from '../pmApi'
 
 export const ruPm = {
   page: {
@@ -39,7 +39,36 @@ export const ruPm = {
     noAssignee: 'Не назначено',
     noDate: 'Без срока',
     saving: 'Сохраняется…',
+    actions: 'Действия с работой',
+    complete: 'Завершить',
+    completed: 'Завершено',
+    nextStage: 'Следующий этап',
+    rename: 'Переименовать',
+    renameField: 'Название работы',
+    renameHint: 'Enter — сохранить, Esc — отменить',
+    take: 'Взять себе',
+    leave: 'Снять себя',
+    assign: 'Назначить',
+    unassign: 'Снять исполнителя',
+    noMembers: 'В проекте нет участников',
+    copyLink: 'Копировать ссылку',
+    linkCopied: 'Ссылка скопирована',
+    linkNotCopied: 'Не удалось скопировать ссылку',
+    comments: 'Комментарии',
+    subtasks: 'Подзадачи',
+    showSubtasks: 'Показать подзадачи',
+    hideSubtasks: 'Скрыть подзадачи',
+    subtasksError: 'Не удалось загрузить подзадачи',
+    loading: 'Загрузка…',
+    noVisibleSubtasks: 'Нет подзадач, доступных вам',
+    due: {
+      overdue: 'Просрочено',
+      today: 'Срок сегодня',
+      soon: 'Срок скоро',
+    } satisfies Record<DueState, string>,
   },
+  saved: 'Сохранено',
+  notSaved: 'Изменение не сохранено',
   reject: {
     no_permission: 'У вас нет права менять эту работу.',
     unknown_stage: 'Этот этап отключён или удалён. Обновите доску.',
@@ -47,6 +76,9 @@ export const ruPm = {
     conflict: 'Работу только что изменил другой пользователь. Карточка обновлена, проверьте и повторите.',
     blocked: 'Работа заблокирована. Снимите причину блокировки, чтобы завершить её.',
     dependencies_open: 'Сначала завершите работы, от которых она зависит.',
+    invalid_subject: 'Название не может быть пустым и длиннее 140 знаков.',
+    assign_forbidden: 'Назначать других может руководитель проекта. Вы можете взять работу себе.',
+    assignee_not_member: 'Исполнителем может быть только участник проекта с доступом к работам.',
   } satisfies Record<MoveRejection, string>,
   moved: 'Перемещено',
   notMoved: 'Карточка не перемещена',

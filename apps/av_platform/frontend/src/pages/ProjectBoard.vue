@@ -25,6 +25,21 @@ const move = useCall<MoveResult, { task: string; stage: string; expected_modifie
   method: 'POST',
   immediate: false,
 })
+const rename = useCall<MoveResult, { task: string; subject: string; expected_modified: string }>({
+  url: PM_API.rename,
+  method: 'POST',
+  immediate: false,
+})
+const assign = useCall<MoveResult, { task: string; user: string }>({
+  url: PM_API.assign,
+  method: 'POST',
+  immediate: false,
+})
+const unassign = useCall<MoveResult, { task: string; user: string }>({
+  url: PM_API.unassign,
+  method: 'POST',
+  immediate: false,
+})
 
 // Local copy so a confirmed move updates one card without reloading the board.
 const tasks = ref<BoardTask[]>([])
@@ -170,13 +185,59 @@ async function moveTask(name: string, stage: string) {
       toast.error(ruPm.notMoved, { description: ruPm.reject[result.code] })
     }
   } catch (error) {
-    const message = (error as { messages?: string[]; message?: string }).messages?.[0]
-      ?? (error as Error).message
-    toast.error(ruPm.error.save, { description: message })
+    toast.error(ruPm.error.save, { description: errorMessage(error) })
   } finally {
     saving.delete(name)
   }
 }
+
+function errorMessage(error: unknown) {
+  return (error as { messages?: string[] }).messages?.[0] ?? (error as Error).message
+}
+
+// Rename and (un)assign share one flow: the card waits for the server and shows its answer.
+async function runCardAction(name: string, call: () => Promise<MoveResult | null | undefined>) {
+  if (saving.has(name)) return
+  saving.add(name)
+  try {
+    const result = await call()
+    if (!result) return
+    if (result.task) replaceTask(result.task)
+    if (result.ok) toast.success(ruPm.saved, { description: result.task.subject })
+    else toast.error(ruPm.notSaved, { description: ruPm.reject[result.code] })
+  } catch (error) {
+    toast.error(ruPm.notSaved, { description: errorMessage(error) })
+  } finally {
+    saving.delete(name)
+  }
+}
+
+function renameTask(name: string, subject: string) {
+  const task = tasks.value.find((t) => t.name === name)
+  if (!task) return
+  runCardAction(name, async () => {
+    await rename.submit({ task: name, subject, expected_modified: task.modified })
+    return rename.data
+  })
+}
+
+function assignTask(name: string, user: string) {
+  runCardAction(name, async () => {
+    await assign.submit({ task: name, user })
+    return assign.data
+  })
+}
+
+function unassignTask(name: string, user: string) {
+  runCardAction(name, async () => {
+    await unassign.submit({ task: name, user })
+    return unassign.data
+  })
+}
+
+const membersByProject = computed(
+  () => new Map((board.data?.projects ?? []).map((p) => [p.name, p.members])),
+)
 
 function onDrop(event: DragEvent, stage: string) {
   dropTarget.value = null
@@ -291,7 +352,13 @@ function resetFilters() {
                 :project-name="filters.project === ANY && task.project ? projectNames.get(task.project) ?? task.project : null"
                 :can-move="board.data.can_move"
                 :saving="saving.has(task.name)"
+                :current-user="board.data.user.name"
+                :members="(task.project && membersByProject.get(task.project)) || []"
+                :can-assign-others="board.data.can_assign_others"
                 @move="moveTask(task.name, $event)"
+                @rename="renameTask(task.name, $event)"
+                @assign="assignTask(task.name, $event)"
+                @unassign="unassignTask(task.name, $event)"
               />
               <p v-if="!column.tasks.length" class="px-3 py-6 text-center text-p-sm text-ink-gray-4">
                 {{ ruPm.column.empty }}

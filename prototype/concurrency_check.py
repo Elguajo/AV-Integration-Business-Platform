@@ -155,9 +155,10 @@ def review_with_injected_failure(name):
 
 
 def race(run, password):
-    """The losing callers fail only under some interleavings, so the race repeats.
+    """Smoke test over the real web stack; C5 is the deterministic form of this race.
 
-    Fresh logins every round: the defect found on 14.11.2026 appeared only with new sessions.
+    The losers fail only when their transaction snapshot predates the winner's commit, which
+    happened mostly on a freshly started backend, so a passing C1 alone proves little.
     """
     failed = []
     for round_number in range(1, RACE_ROUNDS + 1):
@@ -252,6 +253,80 @@ def failure_then_retry(run, password):
             "no Project and Pending after failure; retry accepts once", observed, passed)
 
 
+def _second_connection(name, out, ready):
+    """Connection B in its own thread: take a read snapshot, then accept behind A's lock."""
+    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+
+    frappe.init(site=SITE, sites_path=SITES)
+    frappe.connect()
+    frappe.set_user(PM)
+    try:
+        frappe.db.sql("select count(*) from `tabProject`")  # The snapshot starts with this read.
+        ready.set()
+        out["result"] = review_handover(name, "accept")
+    except Exception as error:
+        out["error"] = f"{type(error).__name__}: {error}"
+    finally:
+        ready.set()
+        frappe.db.rollback()
+        frappe.destroy()
+
+
+def stale_snapshot(run, password):
+    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+
+    handover = new_handover(run, "C5")
+    frappe.set_user(PM)
+    first = review_handover(handover["name"], "accept")  # Row lock held, nothing committed.
+    out, ready = {}, threading.Event()
+    thread = threading.Thread(target=_second_connection, args=(handover["name"], out, ready),
+                              daemon=True)
+    thread.start()
+    ready.wait()
+    thread.join(BLOCK_SECONDS)
+    waited = thread.is_alive()
+    frappe.db.commit()
+    thread.join()
+    frappe.set_user("Administrator")
+    review, project, projects = state(handover)
+    result = out.get("result") or {}
+    passed = (waited and review == "Accepted" and projects == [project] == [first["project"]]
+              and result.get("status") == "Accepted" and result.get("project") == project)
+    observed = (f"B waited {'yes' if waited else 'no'}; {len(projects)} project; handover {review}; "
+                f"B: {result.get('status') or out.get('error')}")
+    return ("C5", "B reads (snapshot) before A commits its accept, then accepts behind A's lock",
+            "B returns A's project; one Project", observed, passed)
+
+
+def batch_keeps_writes(run, password):
+    """Several reviews in one transaction: a refused review must not discard an earlier accept."""
+    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+
+    done = new_handover(run, "C6-done")
+    frappe.set_user(PM)
+    review_handover(done["name"], "accept")
+    frappe.db.commit()
+    refused_one = new_handover(run, "C6-return")
+    accepted = new_handover(run, "C6-accept")
+    frappe.set_user(PM)
+    first = review_handover(accepted["name"], "accept")
+    try:
+        review_handover(refused_one["name"], "return", "")  # Rolls back to its savepoint.
+        refused = False
+    except frappe.ValidationError:
+        refused = True
+    repeat = review_handover(done["name"], "accept")
+    frappe.db.commit()
+    frappe.set_user("Administrator")
+    review, project, projects = state(accepted)
+    passed = (refused and repeat["status"] == "Accepted" and review == "Accepted"
+              and projects == [project] == [first["project"]])
+    observed = (f"return without note refused: {'yes' if refused else 'no'}; earlier accept after "
+                f"commit: {review}, {len(projects)} project")
+    return ("C6", "One transaction: accept, refused return, repeated accept; commit",
+            "the earlier accept and its Project persist", observed, passed)
+
+
 def main():
     password = os.environ["AV_PM_PASSWORD"]
     connect()
@@ -261,9 +336,10 @@ def main():
         print(f"TP-03 run {run}; Frappe {frappe.__version__}; customer {CUSTOMER}")
         before = others()
         rows = [scenario(run, password) for scenario in
-                (race, blocked_then_commit, blocked_then_rollback, failure_then_retry)]
+                (race, blocked_then_commit, blocked_then_rollback, failure_then_retry,
+                 stale_snapshot, batch_keeps_writes)]
         untouched = others() == before
-        rows.append(("C5", "Records of other customers", "unchanged by C1-C4",
+        rows.append(("C7", "Records of other customers", "unchanged by C1-C6",
                      "unchanged" if untouched else "CHANGED", untouched))
     finally:
         frappe.destroy()

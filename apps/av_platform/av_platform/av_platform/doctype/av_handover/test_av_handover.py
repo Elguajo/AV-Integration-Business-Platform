@@ -95,6 +95,8 @@ class TestAVHandover(IntegrationTestCase):
         self.assertEqual([row["item_code"] for row in json.loads(doc.snapshot_json)["items"]],
                          ["AVP-M", "AVP-SERVICES"])
         project = frappe.get_doc("Project", first["project"])
+        # TP-04 finding: ERPNext dropped the PM from Project.users (permlevel 1).
+        self.assertEqual([row.user for row in project.users], [self.pm])
         self.assertEqual(project.company, doc.company)
         self.assertEqual(project.customer, doc.customer)
 
