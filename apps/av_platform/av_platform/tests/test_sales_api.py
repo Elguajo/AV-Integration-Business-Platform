@@ -74,6 +74,23 @@ class TestSalesWorkspaceAPI(IntegrationTestCase):
             create_handover(self.fresh, self.pm, "UI test project",
                             "SYNTHETIC: customer accepted the main scope.")
 
+    def test_old_version_is_superseded_and_cannot_be_handed_over(self):
+        # User decision 14.11.2026: only the current version goes to the PM.
+        q1 = self.demo["quotations"]["Q1"]
+        frappe.set_user(self.sales)
+        rows = {row["name"]: row for row in get_workspace()["quotations"]}
+        self.assertEqual(rows[q1]["stage"], "superseded")
+        data = get_quotation(q1)
+        self.assertEqual(data["stage"], "superseded")
+        self.assertIn("not_current_version", data["blockers"])
+        self.assertFalse(data["can_handover"])
+        current = [v["name"] for v in get_quotation(self.fresh)["versions"] if v["is_current"]]
+        self.assertEqual(current, [self.fresh])
+        with self.assertRaises(frappe.ValidationError):
+            create_handover(q1, self.pm, "UI test project", "SYNTHETIC: customer accepted Q1.")
+        frappe.set_user("Administrator")
+        self.assertFalse(frappe.db.exists("AV Handover", {"quotation": q1}))
+
     def test_missing_customer_approval_creates_nothing(self):
         frappe.set_user(self.sales)
         with self.assertRaises(frappe.ValidationError):

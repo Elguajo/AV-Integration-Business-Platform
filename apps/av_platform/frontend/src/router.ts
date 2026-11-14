@@ -10,6 +10,16 @@ export const router = createRouter({
       component: () => import('./pages/SalesWorkspace.vue'),
       props: true,
     },
+    {
+      path: '/my-tasks',
+      name: 'MyTasks',
+      component: () => import('./pages/MyTasks.vue'),
+    },
+    {
+      path: '/board',
+      name: 'Board',
+      component: () => import('./pages/ProjectBoard.vue'),
+    },
     { path: '/:pathMatch(.*)*', redirect: '/sales' },
   ],
 })

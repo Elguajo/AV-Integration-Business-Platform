@@ -4,6 +4,7 @@
 export type Stage =
   | 'draft'
   | 'issued'
+  | 'superseded'
   | 'handover_draft'
   | 'handover_pending'
   | 'returned'
@@ -13,6 +14,7 @@ export type Stage =
 
 export type Blocker =
   | 'not_submitted'
+  | 'not_current_version'
   | 'not_customer'
   | 'no_main_items'
   | 'handover_exists'
@@ -73,6 +75,7 @@ export interface Version {
   grand_total: number | null
   currency: string | null
   version: number
+  is_current: boolean
 }
 
 export interface QuotationDetail {

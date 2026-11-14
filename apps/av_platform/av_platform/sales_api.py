@@ -8,11 +8,13 @@ Blockers are returned as stable codes; the frontend owns the human-readable text
 import frappe
 from frappe.utils import flt
 
+from av_platform.versions import current_versions, version_filters
+
 SALES_ROLE = "AV Sales"
 PM_ROLE = "AV Project Manager"
 
 QUOTATION_FIELDS = [
-    "name", "title", "party_name", "customer_name", "status", "docstatus", "grand_total",
+    "name", "title", "party_name", "customer_name", "company", "status", "docstatus", "grand_total",
     "currency", "transaction_date", "valid_till", "owner", "creation", "modified",
 ]
 HANDOVER_FIELDS = [
@@ -26,7 +28,7 @@ def _require_sales():
         frappe.throw("The AV Sales role is required.", frappe.PermissionError)
 
 
-def _stage(quote, handover, hidden_handover):
+def _stage(quote, handover, hidden_handover, superseded=False):
     if quote.docstatus == 0:
         return "draft"
     if quote.docstatus == 2:
@@ -34,7 +36,7 @@ def _stage(quote, handover, hidden_handover):
     if hidden_handover:
         return "handover_unknown"
     if not handover:
-        return "issued"
+        return "superseded" if superseded else "issued"
     if handover.docstatus == 0:
         return "handover_draft"
     return {"Pending": "handover_pending", "Accepted": "accepted", "Returned": "returned"}.get(
@@ -68,13 +70,15 @@ def _with_stages(quotes):
     names = [q.name for q in quotes]
     visible = _visible_handovers(names)
     existing = _existing_handover_quotations(names)
+    current = current_versions([(q.party_name, q.company) for q in quotes])
     rows = []
     for quote in quotes:
         handover = visible.get(quote.name)
         hidden = quote.name in existing and not handover
+        superseded = current.get((quote.party_name, quote.company)) != quote.name
         rows.append({
             **quote,
-            "stage": _stage(quote, handover, hidden),
+            "stage": _stage(quote, handover, hidden, superseded),
             "handover": handover,
         })
     return rows
@@ -98,21 +102,23 @@ def get_workspace():
     }
 
 
-def _versions(quote):
+def _versions(quote, current):
     rows = frappe.get_list(
         "Quotation", fields=["name", "title", "docstatus", "status", "grand_total", "currency",
                              "transaction_date", "creation"],
-        filters={"quotation_to": "Customer", "party_name": quote.party_name,
-                 "docstatus": ["!=", 2]},
+        filters={**version_filters(quote.party_name, quote.company), "docstatus": ["!=", 2]},
         order_by="creation asc", limit_page_length=50,
     )
-    return [{**row, "version": index + 1} for index, row in enumerate(rows)]
+    return [{**row, "version": index + 1, "is_current": row.name == current}
+            for index, row in enumerate(rows)]
 
 
-def _blockers(quote, handover_exists):
+def _blockers(quote, handover_exists, current):
     blockers = []
     if quote.docstatus != 1:
         blockers.append("not_submitted")
+    elif current != quote.name:
+        blockers.append("not_current_version")
     if quote.quotation_to != "Customer" or not quote.party_name:
         blockers.append("not_customer")
     if not any(not row.is_alternative for row in quote.items):
@@ -153,7 +159,10 @@ def get_quotation(name: str):
     exists = bool(visible) or bool(_existing_handover_quotations([quote.name]))
     if visible:
         visible["project_manager_name"] = _user_label(visible.project_manager)
-    blockers = _blockers(quote, exists)
+    current = current_versions([(quote.party_name, quote.company)]).get(
+        (quote.party_name, quote.company)
+    )
+    blockers = _blockers(quote, exists, current)
     return {
         "quotation": {
             "name": quote.name, "title": quote.title, "party_name": quote.party_name,
@@ -164,11 +173,12 @@ def get_quotation(name: str):
             "total_taxes_and_charges": flt(quote.total_taxes_and_charges),
             "terms": quote.terms,
         },
-        "stage": _stage(quote, visible, exists and not visible),
+        "stage": _stage(quote, visible, exists and not visible,
+                        quote.docstatus == 1 and current != quote.name),
         "main_items": main,
         "alternatives": [row for row in items if row["is_alternative"]],
         "main_total": sum(row["amount"] for row in main),
-        "versions": _versions(quote),
+        "versions": _versions(quote, current),
         "handover": visible,
         "can_handover": not blockers,
         "blockers": blockers,

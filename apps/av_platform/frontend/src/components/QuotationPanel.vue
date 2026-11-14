@@ -92,6 +92,7 @@ async function onHandedOver() {
             @click="v.name !== d.quotation.name && emit('open', v.name)"
           >
             {{ ru.detail.version }} {{ v.version }} · {{ money(v.grand_total, v.currency) }}
+            <span v-if="v.is_current" class="text-ink-gray-5">· {{ ru.detail.currentVersion }}</span>
           </button>
         </div>
       </section>

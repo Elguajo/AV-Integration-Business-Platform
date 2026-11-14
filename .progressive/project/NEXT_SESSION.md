@@ -8,6 +8,9 @@ Outcome: IN PROGRESS
 Phase 00 — Technical Proof (TP Gate)
 
 ## Completed this session
+- PM-01 (14.11.2026, решение пользователя): Kanban работ проекта `/av/board` — `AV Work Stage`, `pm_board.py`, `pm_api.py`, 16 Frappe-тестов, проверка в браузере под PM (prototype/README.md, раздел PM-01). Ждёт решения пользователя: ограничивать ли права Task/Project в Desk участием в проекте; следующий шаг PM-02–PM-04 — по поручению.
+- PM-02 (14.11.2026, поручение пользователя): «Мои задачи» `/av/my-tasks` — `pm_api.get_my_tasks`, 10 Frappe-тестов, проверка в браузере под PM и на ширине 375 px (prototype/README.md, раздел PM-02). Следующий шаг PM-03 timeline или PM-04 whiteboard — по поручению.
+- Разбор ClickUp и YouGile (14.11.2026, поручение пользователя): [research/07](../../research/07-work-management-reference.md) — предложения H для PM-01–PM-04 по документации, публичным API и просмотру аккаунтов пользователя только на чтение; сценарии с изменением данных NOT RUN. Whiteboard ClickUp построен на tldraw (лицензия source-available) — выбор Excalidraw (MIT) подтверждён.
 - UI-01: рабочее место Sales на Vue 3 + frappe-ui (`/av/sales`), API `sales_api.py`, 17/17 Frappe-тестов, проверка в браузере (prototype/README.md).
 - TP-01: Docker engine доступен; `manage.ps1 check/up/seed` и повторный запуск — PASS; `manage.ps1 test` — 11/11 PASS.
 - Фактические версии записаны в prototype/README.md: Frappe 16.55.1, ERPNext 16.53.0, MariaDB 11.8.3, Redis 7.4.6.

@@ -165,6 +165,7 @@ C8 получен через содержимое поисковой выдач�
 | Обзор смежных продуктов 11.11.2026 | E4; research/02 §8, MVP-SPEC §2.2, источники C10–C19 | Поисковая выдача, не чтение документации и не испытание; все переносы — предложения H |
 | Аудит внедрения Everything 11.11.2026 и ответ пользователя «Да, записать» 12.11.2026 | E5 и U8; MVP-SPEC §2.3, Q9, research/03 §9, AGENTS.md. Основа выбрана: Frappe + TypeScript/JS | Модули и библиотеки не запускались; см. раздел 11 |
 | Слова пользователя 12.11.2026 о роли ERPNext: «Думаю стоит внедрить если можем улучшать его на основе опыта других референс продуктов» | U9; ERPNext в ядре, улучшения своим приложением без правки core (MVP-SPEC §2.3, Q9, ADR-001) | Лицензионные последствия GPL-3.0 для распространения — Q10; пригодность не проверена |
+| Ответ пользователя 14.11.2026 «Нет, только актуальную» на вопрос, можно ли передавать PM устаревшую версию предложения | U10; MVP-SPEC SAL-06; сервер `av_platform/versions.py`, AV Handover, Sales API | Версией в прототипе считается предложение того же клиента и компании (по времени создания) — H до модели сделки SAL-01; запрет принять устаревший пакет — H |
 | Поручение пользователя 12.11.2026 зафиксировать всё на основе [Progressive-Context-Kit](https://github.com/Elguajo/Progressive-Context-Kit) (v4.0.0, commit `bd1eed3`, MIT) | Кит установлен `init_project.py --adopt-existing`; память проекта в `.progressive/` (Brief, Architecture, Roadmap, фаза 00, NEXT_SESSION, ADR-001–003); AGENTS.md и CLAUDE.md объединены с профилем кита, прежняя версия — `.progressive/adoption-backup/` | Спецификации остаются главными для продуктовых сведений; `.progressive/project/` — компактные сводки со ссылками. Инструменты Semble, Serena, RTK и др. не устанавливались |
 
 ## 10. Учёт предоставленного аудита 11 ноября 2026
@@ -215,3 +216,23 @@ C8 получен через содержимое поисковой выдач�
 | Frappe Wiki v3 совместима с v16; штатные Gantt/Kanban проверить до переноса Projects | ACCEPTED | README Frappe Wiki; PV1 в PROTOTYPE-BRIEF |
 | Порядок: основа и P0/P1 → Projects + Field Service → Wiki + PDF → Whiteboard → MCP | MERGED | Не меняет очередь PROTOTYPE-BRIEF §8 и границу V1; модули внедряются после TP Gate |
 | Готовый мастер-промпт для агента | NOT RECEIVED | В файле отсутствует; вместо него создан [AGENTS.md](../AGENTS.md) по поручению пользователя 12.11.2026 |
+
+## 12. Ориентиры по управлению работами: ClickUp и YouGile, 14 ноября 2026
+
+Поручение пользователя 14.11.2026: «Можешь их установить и провести реверс инжиниринг чтобы понять как они работают чтобы дать качественный и уже продуманный продукт». Выполнено в рамках условий использования и ADR-003: изучены поведение, документация и публичные API, код не разбирался. Выводы и предложения H — [research/07](07-work-management-reference.md).
+
+| ID | Источник | Что подтверждает | Ограничение |
+|---|---|---|---|
+| W1 | [ClickUp Terms](https://clickup.com/terms) | Запрет reverse engineering (§1.5), автоматизированного сбора (§3.9, §4.13) и доступа к приватному API (§2.2) | Прочитано 14.11.2026 |
+| W2 | [ClickUp Help: статусы](https://help.clickup.com/hc/en-us/articles/6309452618647-Manage-task-statuses), [Done](https://help.clickup.com/hc/en-us/articles/6309517280919-Use-Done-statuses) | Группы статусов Not started/Active/Done/Closed, наследование | Сводка поиска, страница не открывалась целиком |
+| W3 | [ClickUp Help: Board view](https://help.clickup.com/hc/en-us/articles/35342044832279-Customize-Board-view), [subgroups](https://help.clickup.com/hc/en-us/articles/8352728309271-Use-subgroups-in-Board-view) | Настройки карточек, свёртывание колонок, Me Mode, строки-группы | Прочитано целиком (Board view) |
+| W4 | [ClickUp Help: dependencies](https://help.clickup.com/hc/en-us/articles/6309155073303-Intro-to-Dependency-Relationships), [rescheduling](https://help.clickup.com/hc/en-us/articles/6304547785367-Rescheduling-dependencies) | Blocks/Waiting on, предупреждение при закрытии, автоматический сдвиг | Rescheduling — по сводке поиска |
+| W5 | [ClickUp Help: Whiteboards](https://help.clickup.com/hc/en-us/articles/6326615000471-Intro-to-Whiteboards) | Совместная работа, превращение элементов в задачи, внешний доступ | Тарифные ограничения не сверялись |
+| W6 | [ClickUp Help: My Work](https://help.clickup.com/hc/en-us/articles/18947060934423-Use-the-My-Work-card-in-Home), [baselines](https://help.clickup.com/hc/en-us/articles/34358881283863-Use-baselines-on-Gantt-view), [critical path](https://help.clickup.com/hc/en-us/articles/6310440099479-Critical-Path-and-Slack-Time), [custom fields](https://help.clickup.com/hc/en-us/articles/6303499162647-Custom-Field-types) | Группы по срокам, базовый план, критический путь, типы полей | По сводкам поиска; названия меню могли измениться |
+| W7 | [ClickUp API: Tasks](https://developer.clickup.com/docs/tasks) | Поля задачи, dependencies и linked_tasks, фиксированные приоритеты | — |
+| W8 | [Оферта YouGile](https://yougile.com/media/docs/offer.pdf) | Лицензионный договор-оферта от 09.01.2025 | Текст извлечён частично; упомянутое «Лицензионное соглашение» не найдено |
+| W9 | [База знаний YouGile](https://help.yougile.com/books/baza-znanii-yougile): структура, роли, колонки, зеркала, сводки, «Мои задачи», Гант, стикеры, расширения Workflow/Формы/Согласование/WIP, отчёт «Время в колонках» | Поведение продукта по официальной справке | Ручной просмотр только на чтение — §5 research/07 |
+| W10 | [YouGile REST API v2](https://ru.yougile.com/api-v2) | TaskDto (колонка и `completed` независимы), TaskPermissionsDto, права в API, лимит 50 запросов в минуту | — |
+| W11 | Скриншоты пользователя 14.11.2026 | Устройство интерфейса ClickUp и YouGile в рабочих аккаунтах | Содержат реальные данные компании; в документы перенесено только устройство интерфейса |
+| W12 | Ручной просмотр ClickUp и YouGile во встроенном браузере, 14.11.2026 | Устройство доски, задачи, «Моих задач», Ганта, ролей; whiteboard ClickUp на tldraw | Только чтение, рабочие аккаунты пользователя; сценарии с изменением данных NOT RUN |
+| W13 | [tldraw LICENSE.md](https://github.com/tldraw/tldraw/blob/main/LICENSE.md), [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw) | tldraw — source-available, производство только по лицензии с ключом; Excalidraw — MIT | Проверено `gh api` 14.11.2026 |

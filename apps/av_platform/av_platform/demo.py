@@ -112,10 +112,56 @@ def seed():
             handover.submit()
         finally:
             frappe.set_user("Administrator")
+    board_project = _seed_board(company.name, customer.name, pm)
     frappe.db.set_single_value("Global Defaults", "default_company", company.name)
     frappe.db.set_single_value("Global Defaults", "default_currency", "USD")
     frappe.db.set_single_value("System Settings", "time_zone", "Asia/Tashkent")
     frappe.db.set_single_value("System Settings", "setup_complete", 1)
     return {"synthetic": True, "quotations": quotes, "handover": handover.name,
             "sales_user": sales, "pm_user": pm, "accepted_value": 16000,
-            "review_status": handover.review_status}
+            "review_status": handover.review_status, "board_project": board_project}
+
+
+# (subject, stage, room, system, start offset, end offset, block reason, depends on subject)
+BOARD_TASKS = (
+    ("Обследование помещений A и B", "done", "A, B", None, -14, -10, None, None),
+    ("Схема видеотракта", "review", "A", "Видео", -9, -2, None, None),
+    ("Кабельная ведомость", "in_progress", "A, B", "Кабельные линии", -5, 3, None, None),
+    ("Монтаж дисплеев", "ready", "A", "Видео", 4, 8, None, "Схема видеотракта"),
+    ("Монтаж акустики", "planned", "B", "Аудио", 6, 9,
+     "Нет подтверждённой даты поставки акустики", None),
+    ("Программирование контроллера", "planned", "A, B", "Управление", 10, 15, None, None),
+    ("Проверка звукового поля", "planned", "B", "Аудио", None, None, None, "Монтаж акустики"),
+    ("Подготовка исполнительной документации", "planned", None, None, None, None, None, None),
+)
+
+
+def _seed_board(company, customer, pm):
+    """Synthetic project with tasks in every board stage (PM-01); the PM is a project member."""
+    from frappe.desk.form import assign_to
+
+    marker = "AV-PROTOTYPE-T1 Board"
+    project_name = frappe.db.exists("Project", {"project_name": marker})
+    if not project_name:
+        project_name = frappe.get_doc({
+            "doctype": "Project", "project_name": marker, "company": company,
+            "customer": customer, "status": "Open", "users": [{"user": pm}],
+        }).insert().name
+    names = {}
+    for subject, stage, room, system, start, end, block, depends in BOARD_TASKS:
+        existing = frappe.db.exists("Task", {"project": project_name, "subject": subject})
+        if existing:
+            names[subject] = existing
+            continue
+        task = frappe.get_doc({
+            "doctype": "Task", "subject": subject, "project": project_name, "company": company,
+            "av_stage": stage, "av_room": room, "av_system": system, "av_block_reason": block,
+            "exp_start_date": add_days(today(), start) if start is not None else None,
+            "exp_end_date": add_days(today(), end) if end is not None else None,
+            "depends_on": [{"task": names[depends]}] if depends else [],
+        }).insert()
+        names[subject] = task.name
+        if stage != "done":
+            assign_to.add({"assign_to": [pm], "doctype": "Task", "name": task.name,
+                           "description": subject})
+    return project_name

@@ -16,6 +16,7 @@ export const ru = {
   stage: {
     draft: 'Черновики',
     issued: 'Выданы клиенту',
+    superseded: 'Заменены новой версией',
     handover_draft: 'Передача: черновик',
     handover_pending: 'Ждут решения PM',
     returned: 'Возвращены PM',
@@ -26,6 +27,7 @@ export const ru = {
   stageHint: {
     draft: 'Ещё не выданы клиенту',
     issued: 'Можно передать PM после решения клиента',
+    superseded: 'PM передаётся только актуальная версия',
     handover_draft: 'Пакет передачи не отправлен',
     handover_pending: 'PM ещё не принял пакет',
     returned: 'PM вернул пакет с замечаниями',
@@ -35,6 +37,7 @@ export const ru = {
   } satisfies Record<Stage, string>,
   blocker: {
     not_submitted: 'Предложение ещё не выдано: сначала проведите его в Desk.',
+    not_current_version: 'Есть более новая выданная версия. PM передаётся только актуальная.',
     not_customer: 'Предложение адресовано не клиенту.',
     no_main_items: 'В предложении нет позиций основного состава.',
     handover_exists: 'Это предложение уже передано PM. Для изменений выпустите новую версию.',
@@ -57,6 +60,7 @@ export const ru = {
     status: 'Статус в ERPNext',
     versions: 'Версии для клиента',
     version: 'Версия',
+    currentVersion: 'актуальная',
     mainScope: 'Основной состав',
     mainTotal: 'Итого основной состав',
     grandTotal: 'Сумма предложения',

@@ -24,7 +24,7 @@ const router = useRouter()
 const workspace = useCall<Workspace>({ url: API.workspace })
 
 const BASE_COLUMNS: Stage[] = ['draft', 'issued', 'handover_pending', 'returned', 'accepted']
-const OPTIONAL_COLUMNS: Stage[] = ['handover_draft', 'handover_unknown']
+const OPTIONAL_COLUMNS: Stage[] = ['handover_draft', 'handover_unknown', 'superseded']
 
 const grouped = computed(() => {
   const groups = new Map<Stage, QuotationRow[]>()

@@ -10,4 +10,4 @@ RUN bench pip install --no-cache-dir -e apps/av_platform \
     && ln -sfn /home/frappe/frappe-bench/apps/av_platform/av_platform/public \
         /home/frappe/frappe-bench/assets/av_platform
 
-COPY --chown=frappe:0 prototype/site.py prototype/restore_check.py /opt/av-prototype/
+COPY --chown=frappe:0 prototype/site.py prototype/restore_check.py prototype/access_check.py /opt/av-prototype/

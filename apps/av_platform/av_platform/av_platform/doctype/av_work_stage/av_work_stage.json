@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "name": "AV Work Stage",
+ "module": "AV Platform",
+ "autoname": "field:code",
+ "naming_rule": "By fieldname",
+ "track_changes": 1,
+ "title_field": "label",
+ "description": "Kanban columns of project work (ARC-02: a setting, not code). Each stage maps to an ERPNext Task status.",
+ "field_order": ["code", "label", "sequence", "task_status", "is_closed", "enabled"],
+ "fields": [
+  {"fieldname": "code", "label": "Code", "fieldtype": "Data", "reqd": 1, "unique": 1, "set_only_once": 1, "in_list_view": 1,
+   "description": "Stable identifier used by the API, e.g. in_progress."},
+  {"fieldname": "label", "label": "Label", "fieldtype": "Data", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "sequence", "label": "Sequence", "fieldtype": "Int", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "task_status", "label": "ERPNext task status", "fieldtype": "Select", "reqd": 1, "in_list_view": 1,
+   "options": "Open\nWorking\nPending Review\nCompleted"},
+  {"fieldname": "is_closed", "label": "Closes the task", "fieldtype": "Check", "read_only": 1,
+   "description": "Set from the task status. Closing requires no block reason and completed dependencies."},
+  {"fieldname": "enabled", "label": "Enabled", "fieldtype": "Check", "default": "1"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1},
+  {"role": "Projects Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1},
+  {"role": "Projects User", "read": 1, "report": 1},
+  {"role": "AV Project Manager", "read": 1, "report": 1}
+ ],
+ "sort_field": "sequence",
+ "sort_order": "ASC"
+}

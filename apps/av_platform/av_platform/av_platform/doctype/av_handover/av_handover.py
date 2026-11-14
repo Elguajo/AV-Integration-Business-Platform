@@ -3,6 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 from av_platform.commercial import build_snapshot, serialize_snapshot, snapshot_digest
+from av_platform.versions import is_current_version
 
 _REVIEW_CAPABILITY = object()
 _REVIEW_FIELDS = ("review_status", "project", "reviewed_by", "reviewed_on", "review_note")
@@ -30,6 +31,8 @@ class AVHandover(Document):
             snapshot = build_snapshot(quote.as_dict(), self.customer_approval_reference)
         except ValueError as exc:
             frappe.throw(str(exc))
+        if not is_current_version(quote):
+            frappe.throw("Only the current issued version of the quotation can be handed over.")
         self.snapshot_json = serialize_snapshot(snapshot)
         self.snapshot_sha256 = snapshot_digest(self.snapshot_json)
         self.company = quote.company
@@ -86,6 +89,10 @@ def review_handover(name: str, decision: str, note: str = ""):
             if not note or not note.strip():
                 frappe.throw("Explain what Sales needs to correct.")
         else:
+            # A newer issued version supersedes this package; the PM may only return it.
+            if not is_current_version(frappe.get_doc("Quotation", handover.quotation)):
+                frappe.throw("A newer issued version supersedes this quotation. "
+                             "Return the handover so Sales can hand over the current version.")
             # No early commit: project and review record share the Frappe transaction.
             project = frappe.get_doc({
                 "doctype": "Project", "project_name": handover.project_name,

@@ -1,6 +1,6 @@
 param(
     [Parameter(Position=0)]
-    [ValidateSet('prepare','check','up','status','seed','test','backup','restore-check','down')]
+    [ValidateSet('prepare','check','up','status','seed','test','access-check','backup','restore-check','down')]
     [string]$Action = 'status'
 )
 $ErrorActionPreference = 'Stop'
@@ -74,6 +74,20 @@ if ($Action -eq 'seed') {
 if ($Action -eq 'test') {
     # Do not pass --skip-test-records: Frappe 16 exits 0 without running any test when it is set.
     Compose exec -T backend bench --site av.localhost run-tests --app av_platform
+}
+if ($Action -eq 'access-check') {
+    # TP-02 read paths through nginx; unrelated users get fresh random passwords per run.
+    try {
+        foreach ($line in Get-Content -LiteralPath $envFile) {
+            $name, $value = $line.Split('=', 2)
+            if ($name -in @('AV_SALES_PASSWORD', 'AV_PM_PASSWORD')) {
+                [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+            }
+        }
+        Compose exec -T -e AV_SALES_PASSWORD -e AV_PM_PASSWORD backend ./env/bin/python /opt/av-prototype/access_check.py
+    } finally {
+        Remove-Item Env:AV_SALES_PASSWORD,Env:AV_PM_PASSWORD -ErrorAction SilentlyContinue
+    }
 }
 if ($Action -eq 'backup') {
     Compose exec -T backend bench --site av.localhost backup --with-files

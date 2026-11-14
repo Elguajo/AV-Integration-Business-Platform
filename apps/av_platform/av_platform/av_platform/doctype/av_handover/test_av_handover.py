@@ -51,6 +51,35 @@ class TestAVHandover(IntegrationTestCase):
             doc.submit()
         return doc
 
+    def issue_newer_version(self):
+        frappe.set_user("Administrator")
+        quote = frappe.copy_doc(frappe.get_doc("Quotation", self.quote_name))
+        quote.title = "AV newer " + frappe.generate_hash(length=10)
+        quote.insert()
+        quote.submit()
+        return quote.name
+
+    def test_superseded_version_cannot_be_handed_over(self):
+        # User decision 14.11.2026: only the current version goes to the PM.
+        self.issue_newer_version()
+        with self.assertRaises(frappe.ValidationError):
+            self.handover()
+        frappe.set_user("Administrator")
+        # The helper inserts and submits separately, so the draft stays; the API wraps both.
+        self.assertFalse(frappe.db.exists("AV Handover",
+                                          {"quotation": self.quote_name, "docstatus": 1}))
+
+    def test_superseded_pending_handover_can_only_be_returned(self):
+        doc = self.handover()
+        self.issue_newer_version()
+        frappe.set_user(self.pm)
+        with self.assertRaises(frappe.ValidationError):
+            review_handover(doc.name, "accept")
+        self.assertEqual(frappe.db.count("Project", {"project_name": doc.project_name}), 0)
+        self.assertEqual(frappe.db.get_value("AV Handover", doc.name, "review_status"), "Pending")
+        result = review_handover(doc.name, "return", "A newer version was issued")
+        self.assertEqual(result["status"], "Returned")
+
     def test_accept_and_retry_create_one_project(self):
         doc = self.handover()
         before = doc.snapshot_json
@@ -105,6 +134,23 @@ class TestAVHandover(IntegrationTestCase):
         with self.assertRaises(frappe.PermissionError):
             review_handover(doc.name, "accept")
         self.assertEqual(frappe.get_list("AV Handover", filters={"name": doc.name}), [])
+
+    def test_attachment_list_hidden_from_unassigned_pm(self):
+        # TP-02 finding: Frappe listed handover attachments to any role reader.
+        doc = self.handover()
+        frappe.set_user("Administrator")
+        frappe.get_doc({"doctype": "File", "file_name": "tp02-test.txt", "is_private": 1,
+                        "attached_to_doctype": "AV Handover", "attached_to_name": doc.name,
+                        "content": "SYNTHETIC"}).insert()
+        email = "other-pm-" + frappe.generate_hash(length=8) + "@av-prototype.invalid"
+        frappe.get_doc({"doctype": "User", "email": email, "first_name": "Other PM",
+                        "send_welcome_email": 0, "roles": [{"role": "AV Project Manager"},
+                                                              {"role": "Projects User"}]}).insert()
+        filters = {"attached_to_doctype": "AV Handover", "attached_to_name": doc.name}
+        frappe.set_user(email)
+        self.assertEqual(frappe.get_list("File", filters=filters), [])
+        frappe.set_user(self.pm)
+        self.assertEqual(len(frappe.get_list("File", filters=filters)), 1)
 
     def test_return_requires_comment_and_does_not_create_project(self):
         doc = self.handover()
