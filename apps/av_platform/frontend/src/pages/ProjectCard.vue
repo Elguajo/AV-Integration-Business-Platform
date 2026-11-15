@@ -84,8 +84,8 @@ function workStatus(work: Work) {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-surface-gray-1 text-ink-gray-8">
-    <div class="mx-auto max-w-[1400px] px-3 pb-10 pt-4 sm:px-5">
+  <div class="h-full text-ink-gray-8">
+    <div v-if="data.error || forbidden || !card" class="h-full overflow-y-auto px-3 pb-10 pt-4 sm:px-5">
       <div v-if="data.error || forbidden" class="mx-auto max-w-xl pt-6">
         <p class="text-lg-semibold text-ink-gray-8">{{ t.card.error }}</p>
         <p v-if="forbidden" class="mt-2 text-p-base text-ink-gray-6">{{ t.card.forbidden }}</p>
@@ -95,251 +95,253 @@ function workStatus(work: Work) {
         </a>
       </div>
 
-      <div v-else-if="!card" class="space-y-3">
+      <div v-else class="space-y-3">
         <Skeleton class="h-14 w-full rounded-6" />
         <Skeleton class="h-96 w-full rounded-6" />
       </div>
+    </div>
 
-      <RecordShell v-else-if="p" v-model:active="section" :sections="sections" :sections-label="t.card.sectionsLabel">
-        <template #header>
-          <a
-            :href="shellUrl('projects')"
-            class="inline-grid size-8 place-items-center rounded-4 border border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-2"
-            :aria-label="t.card.back"
-            :title="t.card.back"
-            @click="openShell($event, 'projects')"
-          >
-            <span class="lucide-arrow-left size-4" aria-hidden="true" />
-          </a>
-          <h1 class="min-w-0 break-words text-lg font-semibold text-ink-gray-9">{{ p.project_name || p.name }}</h1>
-          <span class="text-p-sm text-ink-gray-5">{{ p.name }}</span>
-          <StatusPill :status="p.status" />
-          <span class="text-p-sm text-ink-gray-6">
-            {{ p.customer || t.noData }} · {{ t.projects.pm }} {{ p.pm?.full_name || p.pm?.name || t.noData }}
-          </span>
-          <span class="grow" />
-          <PeopleStack :people="p.team" />
-          <span
-            v-if="card.money_visible"
-            class="rounded-4 border border-outline-gray-3 px-2.5 py-1 text-p-sm font-medium tabular-nums text-ink-gray-8"
-          >
-            {{ t.table.basis }}: {{ p.basis ? money(p.basis.amount, p.basis.currency) : t.noData }}
-          </span>
-          <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
-        </template>
+    <RecordShell v-else-if="p" v-model:active="section" :sections="sections" :sections-label="t.card.sectionsLabel">
+      <template #nav-top>
+        <a
+          :href="shellUrl('projects')"
+          class="flex h-8 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-4 px-2 text-p-sm text-ink-gray-6 hover:bg-surface-gray-2 lg:mb-2"
+          :title="t.card.back"
+          @click="openShell($event, 'projects')"
+        >
+          <span class="lucide-arrow-left size-4 shrink-0" aria-hidden="true" />
+          <span class="max-lg:sr-only">{{ t.card.back }}</span>
+        </a>
+      </template>
+      <template #header>
+        <h1 class="min-w-0 break-words text-lg font-semibold text-ink-gray-9">{{ p.project_name || p.name }}</h1>
+        <span class="text-p-sm text-ink-gray-5">{{ p.name }}</span>
+        <StatusPill :status="p.status" />
+        <span class="text-p-sm text-ink-gray-6">
+          {{ p.customer || t.noData }} · {{ t.projects.pm }} {{ p.pm?.full_name || p.pm?.name || t.noData }}
+        </span>
+        <span class="grow" />
+        <PeopleStack :people="p.team" />
+        <span
+          v-if="card.money_visible"
+          class="rounded-4 border border-outline-gray-3 px-2.5 py-1 text-p-sm font-medium tabular-nums text-ink-gray-8"
+        >
+          {{ t.table.basis }}: {{ p.basis ? money(p.basis.amount, p.basis.currency) : t.noData }}
+        </span>
+        <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
+      </template>
 
-        <p class="text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
+      <p class="text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
 
-        <!-- Overview -->
-        <template v-if="section === 'overview'">
-          <div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
-            <div class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2">
-              <span class="text-p-xs text-ink-gray-6">{{ t.directions.works }}</span>
-              <span class="block text-lg font-semibold tabular-nums text-ink-gray-9">
-                {{ p.works.total ? t.card.worksDone(p.works.done, p.works.total) : t.noData }}
-              </span>
-              <span v-if="blockedCount || overdueCount" class="text-p-xs text-ink-red-6">
-                {{ t.card.blocked }}: {{ blockedCount }} · {{ t.card.overdue }}: {{ overdueCount }}
-              </span>
-            </div>
-            <div
-              v-for="key in (['procurement', 'install', 'tests', 'money'] as const)"
-              :key="key"
-              class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2"
-            >
-              <span class="text-p-xs text-ink-gray-6">{{ t.directions[key] }}</span>
-              <span class="block text-p-sm font-medium text-ink-gray-5">{{ t.directions.notTracked }}</span>
-            </div>
+      <!-- Overview -->
+      <template v-if="section === 'overview'">
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
+          <div class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2">
+            <span class="text-p-xs text-ink-gray-6">{{ t.directions.works }}</span>
+            <span class="block text-lg font-semibold tabular-nums text-ink-gray-9">
+              {{ p.works.total ? t.card.worksDone(p.works.done, p.works.total) : t.noData }}
+            </span>
+            <span v-if="blockedCount || overdueCount" class="text-p-xs text-ink-red-6">
+              {{ t.card.blocked }}: {{ blockedCount }} · {{ t.card.overdue }}: {{ overdueCount }}
+            </span>
           </div>
-
-          <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
-            <section class="rounded-6 border border-outline-gray-2 p-3">
-              <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.basis }}</h2>
-              <template v-if="!card.money_visible">
-                <p class="text-p-sm text-ink-gray-5">{{ t.hidden }}</p>
-              </template>
-              <template v-else-if="p.basis">
-                <p class="text-2xl font-semibold tabular-nums text-ink-gray-9">{{ money(p.basis.amount, p.basis.currency) }}</p>
-                <p class="mt-1 text-p-sm text-ink-gray-6">
-                  <a :href="deskUrl('Quotation', p.basis.quotation)" class="hover:underline">{{ t.card.basisFrom(p.basis.quotation) }}</a>
-                  <template v-if="p.handover?.reviewed_on"> · {{ t.card.acceptedOn }} {{ date(p.handover.reviewed_on) }}</template>
-                </p>
-              </template>
-              <p v-else class="text-p-sm text-ink-gray-5">{{ t.card.noBasis }}</p>
-            </section>
-
-            <section class="rounded-6 border border-outline-gray-2 p-3">
-              <h2 class="mb-2 flex items-center gap-2 text-p-base font-semibold text-ink-gray-9">
-                {{ t.card.obstacles }}
-                <span v-if="card.obstacles.length" class="rounded-3 bg-surface-red-2 px-1.5 text-p-xs text-ink-red-6">{{ card.obstacles.length }}</span>
-              </h2>
-              <p v-if="!card.obstacles.length" class="text-p-sm text-ink-gray-5">{{ t.card.noObstacles }}</p>
-              <ul v-else class="divide-y divide-outline-gray-1">
-                <li v-for="work in card.obstacles.slice(0, 6)" :key="work.name" class="flex gap-2 py-1.5">
-                  <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="work.kind === 'blocked' ? 'bg-surface-red-5' : 'bg-surface-amber-5'" aria-hidden="true" />
-                  <div class="min-w-0 text-p-sm">
-                    <a :href="deskUrl('Task', work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</a>
-                    <p v-if="work.block_reason" class="text-ink-amber-7">{{ work.block_reason }}</p>
-                    <p class="text-p-xs text-ink-gray-5">
-                      {{ work.kind === 'blocked' ? t.card.blocked : t.card.overdue }} · {{ people(work) }} ·
-                      <span :class="dueClass(work)">{{ t.card.due }} {{ date(work.end) }}</span>
-                    </p>
-                  </div>
-                </li>
-              </ul>
-            </section>
+          <div
+            v-for="key in (['procurement', 'install', 'tests', 'money'] as const)"
+            :key="key"
+            class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2"
+          >
+            <span class="text-p-xs text-ink-gray-6">{{ t.directions[key] }}</span>
+            <span class="block text-p-sm font-medium text-ink-gray-5">{{ t.directions.notTracked }}</span>
           </div>
+        </div>
 
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
           <section class="rounded-6 border border-outline-gray-2 p-3">
-            <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.reasons }}</h2>
-            <ul class="flex flex-wrap gap-1.5">
-              <li v-for="reason in p.reasons" :key="reason.code" class="rounded-3 bg-surface-gray-2 px-2 py-0.5 text-p-xs text-ink-gray-7">
-                {{ t.reasons[reason.code](reason.count) }}
-              </li>
-              <li v-if="p.status === 'on_plan'" class="text-p-xs text-ink-gray-5">{{ t.card.onPlan }}</li>
-            </ul>
+            <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.basis }}</h2>
+            <template v-if="!card.money_visible">
+              <p class="text-p-sm text-ink-gray-5">{{ t.hidden }}</p>
+            </template>
+            <template v-else-if="p.basis">
+              <p class="text-2xl font-semibold tabular-nums text-ink-gray-9">{{ money(p.basis.amount, p.basis.currency) }}</p>
+              <p class="mt-1 text-p-sm text-ink-gray-6">
+                <a :href="deskUrl('Quotation', p.basis.quotation)" class="hover:underline">{{ t.card.basisFrom(p.basis.quotation) }}</a>
+                <template v-if="p.handover?.reviewed_on"> · {{ t.card.acceptedOn }} {{ date(p.handover.reviewed_on) }}</template>
+              </p>
+            </template>
+            <p v-else class="text-p-sm text-ink-gray-5">{{ t.card.noBasis }}</p>
           </section>
 
           <section class="rounded-6 border border-outline-gray-2 p-3">
-            <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.milestones }}</h2>
-            <p v-if="!card.milestones.length" class="text-p-sm text-ink-gray-5">{{ t.card.noMilestones }}</p>
-            <ul v-else class="divide-y divide-outline-gray-1">
-              <li v-for="work in card.milestones" :key="work.name" class="flex flex-wrap items-baseline justify-between gap-2 py-1.5 text-p-sm">
-                <a :href="deskUrl('Task', work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</a>
-                <span :class="dueClass(work)">{{ date(work.end) }}</span>
-              </li>
-            </ul>
-          </section>
-        </template>
-
-        <!-- Works -->
-        <template v-else-if="section === 'works'">
-          <div class="flex flex-wrap items-center gap-2">
-            <h2 class="text-p-base font-semibold text-ink-gray-9">
-              {{ t.card.sections.works }}<template v-if="stage"> · {{ stage === NO_STAGE ? t.card.noStage : stageLabel.get(stage) }}</template>
+            <h2 class="mb-2 flex items-center gap-2 text-p-base font-semibold text-ink-gray-9">
+              {{ t.card.obstacles }}
+              <span v-if="card.obstacles.length" class="rounded-3 bg-surface-red-2 px-1.5 text-p-xs text-ink-red-6">{{ card.obstacles.length }}</span>
             </h2>
-            <span class="grow" />
-            <a :href="shellUrl('board')" @click="openShell($event, 'board')">
-              <Button icon-left="lucide-square-kanban" :label="t.card.openBoard" />
-            </a>
-          </div>
-          <div v-if="card.works.length" class="flex flex-wrap gap-1.5" role="group" :aria-label="t.card.stages">
-            <button
-              v-for="row in [{ key: null, label: t.card.wholeProject }, ...stageRows]"
-              :key="row.key ?? 'all'"
-              type="button"
-              class="rounded-full border px-2.5 py-0.5 text-p-sm"
-              :class="stage === row.key ? 'border-outline-blue-1 bg-surface-blue-2 text-ink-blue-6' : 'border-outline-gray-2 text-ink-gray-7 hover:bg-surface-gray-2'"
-              :aria-pressed="stage === row.key"
-              @click="stage = row.key"
-            >
-              {{ row.label }} <span class="tabular-nums text-ink-gray-5">{{ row.key ? (stageCounts.get(row.key) ?? 0) : card.works.length }}</span>
-            </button>
-          </div>
-          <p v-if="!card.works.length" class="rounded-6 border border-dashed border-outline-gray-3 p-6 text-center text-p-sm text-ink-gray-6">{{ t.card.noWorks }}</p>
-          <div v-else class="overflow-x-auto rounded-6 border border-outline-gray-2">
-            <table class="w-full min-w-[640px] border-collapse text-p-sm">
-              <thead>
-                <tr class="bg-surface-gray-2 text-left text-p-xs text-ink-gray-6">
-                  <th class="px-3 py-2 font-medium">{{ t.table.works }}</th>
-                  <th class="px-3 py-2 font-medium">{{ t.card.stages }}</th>
-                  <th class="px-3 py-2 font-medium">{{ t.myTasks.title }}</th>
-                  <th class="px-3 py-2 font-medium">{{ t.card.end }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="work in shownWorks" :key="work.name" class="border-b border-outline-gray-1">
-                  <td class="px-3 py-2">
-                    <a :href="deskUrl('Task', work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</a>
-                    <span v-if="work.is_milestone" class="ml-1.5 rounded-3 bg-surface-blue-2 px-1.5 text-p-xs text-ink-blue-6">{{ t.card.milestone }}</span>
-                    <span v-if="work.block_reason" class="block text-p-xs text-ink-amber-7">{{ work.block_reason }}</span>
-                  </td>
-                  <td class="px-3 py-2 text-ink-gray-7">{{ workStatus(work) }}</td>
-                  <td class="px-3 py-2 text-ink-gray-7">{{ people(work) }}</td>
-                  <td class="whitespace-nowrap px-3 py-2" :class="dueClass(work)">{{ date(work.end) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-if="card.works_truncated" class="text-p-sm text-ink-amber-7">{{ t.card.worksTruncated }}</p>
-        </template>
+            <p v-if="!card.obstacles.length" class="text-p-sm text-ink-gray-5">{{ t.card.noObstacles }}</p>
+            <ul v-else class="divide-y divide-outline-gray-1">
+              <li v-for="work in card.obstacles.slice(0, 6)" :key="work.name" class="flex gap-2 py-1.5">
+                <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="work.kind === 'blocked' ? 'bg-surface-red-5' : 'bg-surface-amber-5'" aria-hidden="true" />
+                <div class="min-w-0 text-p-sm">
+                  <a :href="deskUrl('Task', work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+                  <p v-if="work.block_reason" class="text-ink-amber-7">{{ work.block_reason }}</p>
+                  <p class="text-p-xs text-ink-gray-5">
+                    {{ work.kind === 'blocked' ? t.card.blocked : t.card.overdue }} · {{ people(work) }} ·
+                    <span :class="dueClass(work)">{{ t.card.due }} {{ date(work.end) }}</span>
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </section>
+        </div>
 
-        <!-- Details -->
-        <template v-else-if="section === 'details'">
-          <dl class="grid gap-3 sm:grid-cols-2">
-            <div class="rounded-6 border border-outline-gray-2 p-3">
-              <dt class="text-p-xs text-ink-gray-5">{{ t.card.customer }}</dt>
-              <dd class="text-p-sm text-ink-gray-8">{{ p.customer || t.noData }}</dd>
-            </div>
-            <div class="rounded-6 border border-outline-gray-2 p-3">
-              <dt class="text-p-xs text-ink-gray-5">{{ t.card.start }} — {{ t.card.end }}</dt>
-              <dd class="text-p-sm text-ink-gray-8">{{ date(p.expected_start) }} — {{ date(p.expected_end) }}</dd>
-            </div>
-            <div class="rounded-6 border border-outline-gray-2 p-3">
-              <dt class="text-p-xs text-ink-gray-5">{{ t.card.team }}</dt>
-              <dd class="text-p-sm text-ink-gray-8">
-                {{ p.team.length ? p.team.map((m) => m.full_name || m.name).join(', ') : t.card.noTeam }}
-              </dd>
-            </div>
-            <div class="rounded-6 border border-outline-gray-2 p-3">
-              <dt class="text-p-xs text-ink-gray-5">{{ t.card.handover }}</dt>
-              <dd class="text-p-sm text-ink-gray-8">
-                <a v-if="p.handover" :href="deskUrl('AV Handover', p.handover.name)" class="hover:underline">{{ p.handover.name }}</a>
-                <template v-else>{{ card.money_visible ? t.noData : t.hidden }}</template>
-              </dd>
-            </div>
-            <div class="rounded-6 border border-outline-gray-2 p-3">
-              <dt class="text-p-xs text-ink-gray-5">{{ t.card.projectStatus }}</dt>
-              <dd class="text-p-sm text-ink-gray-8">{{ p.project_status }}</dd>
-            </div>
-          </dl>
-          <a :href="deskUrl('Project', p.name)" class="inline-block text-p-sm text-ink-blue-link hover:underline">{{ t.card.openDesk }}</a>
-        </template>
+        <section class="rounded-6 border border-outline-gray-2 p-3">
+          <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.reasons }}</h2>
+          <ul class="flex flex-wrap gap-1.5">
+            <li v-for="reason in p.reasons" :key="reason.code" class="rounded-3 bg-surface-gray-2 px-2 py-0.5 text-p-xs text-ink-gray-7">
+              {{ t.reasons[reason.code](reason.count) }}
+            </li>
+            <li v-if="p.status === 'on_plan'" class="text-p-xs text-ink-gray-5">{{ t.card.onPlan }}</li>
+          </ul>
+        </section>
 
-        <!-- Files -->
-        <template v-else-if="section === 'files'">
-          <p v-if="!card.files.length" class="rounded-6 border border-dashed border-outline-gray-3 p-6 text-center text-p-sm text-ink-gray-6">{{ t.card.noFiles }}</p>
-          <ul v-else class="divide-y divide-outline-gray-1 rounded-6 border border-outline-gray-2">
-            <li v-for="file in card.files" :key="file.name" class="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-p-sm">
-              <a :href="file.file_url" target="_blank" rel="noopener" class="text-ink-gray-8 hover:underline">{{ file.file_name || file.file_url }}</a>
-              <span class="text-p-xs text-ink-gray-5">
-                <template v-if="file.is_private">{{ t.card.private }} · </template>{{ date(file.creation) }}
-              </span>
+        <section class="rounded-6 border border-outline-gray-2 p-3">
+          <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.milestones }}</h2>
+          <p v-if="!card.milestones.length" class="text-p-sm text-ink-gray-5">{{ t.card.noMilestones }}</p>
+          <ul v-else class="divide-y divide-outline-gray-1">
+            <li v-for="work in card.milestones" :key="work.name" class="flex flex-wrap items-baseline justify-between gap-2 py-1.5 text-p-sm">
+              <a :href="deskUrl('Task', work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+              <span :class="dueClass(work)">{{ date(work.end) }}</span>
             </li>
           </ul>
-        </template>
+        </section>
+      </template>
 
-        <template #aside>
-          <section>
-            <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.myWorks }}</h2>
-            <p v-if="!card.my_works.length" class="text-ink-gray-5">{{ t.card.noMyWorks }}</p>
-            <ul v-else class="space-y-1.5">
-              <li v-for="work in card.my_works.slice(0, 6)" :key="work.name">
-                <a :href="deskUrl('Task', work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</a>
-                <span class="block text-p-xs" :class="dueClass(work)">{{ t.card.due }} {{ date(work.end) }}</span>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.milestones }}</h2>
-            <p v-if="!card.milestones.length" class="text-ink-gray-5">{{ t.projects.noMilestone }}</p>
-            <p v-else class="text-ink-gray-8">
-              {{ card.milestones[0].subject }}
-              <span class="block text-p-xs" :class="dueClass(card.milestones[0])">{{ date(card.milestones[0].end) }}</span>
-            </p>
-          </section>
-          <section>
-            <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.files }}</h2>
-            <p v-if="!card.files.length" class="text-ink-gray-5">{{ t.card.noFiles }}</p>
-            <ul v-else class="space-y-1">
-              <li v-for="file in card.files.slice(0, 4)" :key="file.name" class="truncate">
-                <a :href="file.file_url" target="_blank" rel="noopener" class="text-ink-gray-8 hover:underline">{{ file.file_name || file.file_url }}</a>
-              </li>
-            </ul>
-          </section>
-          <p class="text-p-xs text-ink-gray-5">{{ t.notTracked.text }}</p>
-        </template>
-      </RecordShell>
-    </div>
+      <!-- Works -->
+      <template v-else-if="section === 'works'">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="text-p-base font-semibold text-ink-gray-9">
+            {{ t.card.sections.works }}<template v-if="stage"> · {{ stage === NO_STAGE ? t.card.noStage : stageLabel.get(stage) }}</template>
+          </h2>
+          <span class="grow" />
+          <a :href="shellUrl('board')" @click="openShell($event, 'board')">
+            <Button icon-left="lucide-square-kanban" :label="t.card.openBoard" />
+          </a>
+        </div>
+        <div v-if="card.works.length" class="flex flex-wrap gap-1.5" role="group" :aria-label="t.card.stages">
+          <button
+            v-for="row in [{ key: null, label: t.card.wholeProject }, ...stageRows]"
+            :key="row.key ?? 'all'"
+            type="button"
+            class="rounded-full border px-2.5 py-0.5 text-p-sm"
+            :class="stage === row.key ? 'border-outline-blue-1 bg-surface-blue-2 text-ink-blue-6' : 'border-outline-gray-2 text-ink-gray-7 hover:bg-surface-gray-2'"
+            :aria-pressed="stage === row.key"
+            @click="stage = row.key"
+          >
+            {{ row.label }} <span class="tabular-nums text-ink-gray-5">{{ row.key ? (stageCounts.get(row.key) ?? 0) : card.works.length }}</span>
+          </button>
+        </div>
+        <p v-if="!card.works.length" class="rounded-6 border border-dashed border-outline-gray-3 p-6 text-center text-p-sm text-ink-gray-6">{{ t.card.noWorks }}</p>
+        <div v-else class="overflow-x-auto rounded-6 border border-outline-gray-2">
+          <table class="w-full min-w-[640px] border-collapse text-p-sm">
+            <thead>
+              <tr class="bg-surface-gray-2 text-left text-p-xs text-ink-gray-6">
+                <th class="px-3 py-2 font-medium">{{ t.table.works }}</th>
+                <th class="px-3 py-2 font-medium">{{ t.card.stages }}</th>
+                <th class="px-3 py-2 font-medium">{{ t.myTasks.title }}</th>
+                <th class="px-3 py-2 font-medium">{{ t.card.end }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="work in shownWorks" :key="work.name" class="border-b border-outline-gray-1">
+                <td class="px-3 py-2">
+                  <a :href="deskUrl('Task', work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+                  <span v-if="work.is_milestone" class="ml-1.5 rounded-3 bg-surface-blue-2 px-1.5 text-p-xs text-ink-blue-6">{{ t.card.milestone }}</span>
+                  <span v-if="work.block_reason" class="block text-p-xs text-ink-amber-7">{{ work.block_reason }}</span>
+                </td>
+                <td class="px-3 py-2 text-ink-gray-7">{{ workStatus(work) }}</td>
+                <td class="px-3 py-2 text-ink-gray-7">{{ people(work) }}</td>
+                <td class="whitespace-nowrap px-3 py-2" :class="dueClass(work)">{{ date(work.end) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="card.works_truncated" class="text-p-sm text-ink-amber-7">{{ t.card.worksTruncated }}</p>
+      </template>
+
+      <!-- Details -->
+      <template v-else-if="section === 'details'">
+        <dl class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-6 border border-outline-gray-2 p-3">
+            <dt class="text-p-xs text-ink-gray-5">{{ t.card.customer }}</dt>
+            <dd class="text-p-sm text-ink-gray-8">{{ p.customer || t.noData }}</dd>
+          </div>
+          <div class="rounded-6 border border-outline-gray-2 p-3">
+            <dt class="text-p-xs text-ink-gray-5">{{ t.card.start }} — {{ t.card.end }}</dt>
+            <dd class="text-p-sm text-ink-gray-8">{{ date(p.expected_start) }} — {{ date(p.expected_end) }}</dd>
+          </div>
+          <div class="rounded-6 border border-outline-gray-2 p-3">
+            <dt class="text-p-xs text-ink-gray-5">{{ t.card.team }}</dt>
+            <dd class="text-p-sm text-ink-gray-8">
+              {{ p.team.length ? p.team.map((m) => m.full_name || m.name).join(', ') : t.card.noTeam }}
+            </dd>
+          </div>
+          <div class="rounded-6 border border-outline-gray-2 p-3">
+            <dt class="text-p-xs text-ink-gray-5">{{ t.card.handover }}</dt>
+            <dd class="text-p-sm text-ink-gray-8">
+              <a v-if="p.handover" :href="deskUrl('AV Handover', p.handover.name)" class="hover:underline">{{ p.handover.name }}</a>
+              <template v-else>{{ card.money_visible ? t.noData : t.hidden }}</template>
+            </dd>
+          </div>
+          <div class="rounded-6 border border-outline-gray-2 p-3">
+            <dt class="text-p-xs text-ink-gray-5">{{ t.card.projectStatus }}</dt>
+            <dd class="text-p-sm text-ink-gray-8">{{ p.project_status }}</dd>
+          </div>
+        </dl>
+        <a :href="deskUrl('Project', p.name)" class="inline-block text-p-sm text-ink-blue-link hover:underline">{{ t.card.openDesk }}</a>
+      </template>
+
+      <!-- Files -->
+      <template v-else-if="section === 'files'">
+        <p v-if="!card.files.length" class="rounded-6 border border-dashed border-outline-gray-3 p-6 text-center text-p-sm text-ink-gray-6">{{ t.card.noFiles }}</p>
+        <ul v-else class="divide-y divide-outline-gray-1 rounded-6 border border-outline-gray-2">
+          <li v-for="file in card.files" :key="file.name" class="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-p-sm">
+            <a :href="file.file_url" target="_blank" rel="noopener" class="text-ink-gray-8 hover:underline">{{ file.file_name || file.file_url }}</a>
+            <span class="text-p-xs text-ink-gray-5">
+              <template v-if="file.is_private">{{ t.card.private }} · </template>{{ date(file.creation) }}
+            </span>
+          </li>
+        </ul>
+      </template>
+
+      <template #aside>
+        <section>
+          <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.myWorks }}</h2>
+          <p v-if="!card.my_works.length" class="text-ink-gray-5">{{ t.card.noMyWorks }}</p>
+          <ul v-else class="space-y-1.5">
+            <li v-for="work in card.my_works.slice(0, 6)" :key="work.name">
+              <a :href="deskUrl('Task', work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+              <span class="block text-p-xs" :class="dueClass(work)">{{ t.card.due }} {{ date(work.end) }}</span>
+            </li>
+          </ul>
+        </section>
+        <section>
+          <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.milestones }}</h2>
+          <p v-if="!card.milestones.length" class="text-ink-gray-5">{{ t.projects.noMilestone }}</p>
+          <p v-else class="text-ink-gray-8">
+            {{ card.milestones[0].subject }}
+            <span class="block text-p-xs" :class="dueClass(card.milestones[0])">{{ date(card.milestones[0].end) }}</span>
+          </p>
+        </section>
+        <section>
+          <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.files }}</h2>
+          <p v-if="!card.files.length" class="text-ink-gray-5">{{ t.card.noFiles }}</p>
+          <ul v-else class="space-y-1">
+            <li v-for="file in card.files.slice(0, 4)" :key="file.name" class="truncate">
+              <a :href="file.file_url" target="_blank" rel="noopener" class="text-ink-gray-8 hover:underline">{{ file.file_name || file.file_url }}</a>
+            </li>
+          </ul>
+        </section>
+        <p class="text-p-xs text-ink-gray-5">{{ t.notTracked.text }}</p>
+      </template>
+    </RecordShell>
   </div>
 </template>
