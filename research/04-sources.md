@@ -286,3 +286,127 @@ C8 получен через содержимое поисковой выдач�
 | Cloudflare Tunnel + Access — первый вариант для демо-стенда | PROPOSED (H) | Без белого IP и открытых портов, вход проверяется до страницы Frappe (D6) |
 | Свой домен + порт 443 + Let's Encrypt | DEFERRED (H) | Страница входа открыта всему интернету; не раньше пилота после PG-05/PG-08 (D3) |
 | Cloudflare допустим для реальных закрытых данных | OPEN | Вероятная расшифровка у Cloudflare (D7) противоречит ADR-005 «закрытые данные не покидают офис»; решить до Pilot Gate |
+
+## 15. Рабочие места ролей, 14 ноября 2026
+
+Поручение пользователя 14.11.2026: «Проведи аудит и ресерч в интернете наших рефернс продуктов и сделай выводи что и как лучше для них реализовать». Выводы — [research/09](09-role-workplaces.md). Продукты не открывались. «Прочитано» — страница открыта целиком; «выдача» — известна по поисковой выдаче с кратким пересказом, это более слабое основание. Даты — с самих страниц.
+
+| № | Источник | Что подтверждает | Уровень |
+|---|---|---|---|
+| RW1 | [Jetbuilt Dashboard](https://help.jetbuilt.com/en/articles/3949057-jetbuilt-dashboard) | Блоки главной: воронка, прогноз с вероятностью, «закрываются в 30 дней», по рынкам и стадиям, On My Plate; права по блокам не описаны | Прочитано, 03.06.2026 |
+| RW2 | [Jetbuilt Project P&L Reporting](https://help.jetbuilt.com/en/articles/10184436-project-p-l-reporting) | Сводный и подробный P&L по категориям, фильтры; только Enterprise; план-факт не описан | Прочитано, 02.05.2025 |
+| RW3 | [Jetbuilt Work in Progress Report](https://help.jetbuilt.com/en/articles/10545945-work-in-progress-report) | Проданные, отработанные и оставшиеся часы и их стоимость по категориям; процента готовности и выставленных счетов нет | Прочитано, 16.04.2026 |
+| RW4 | [Jetbuilt User Permission Breakdown](https://help.jetbuilt.com/en/articles/4381821-user-permission-breakdown) | Флаги прав: See Costs and Margins, Engineer Projects, Control Projects, Run Company Reports, Access All Projects и др. | Прочитано, 12.12.2025 |
+| RW5 | [Jetbuilt: Engineering Scrub](https://help.jetbuilt.com/en/articles/6004508-how-to-use-the-engineering-scrub-stage), [Project Stages](https://help.jetbuilt.com/en/articles/791923-project-stages-explained) | Новая версия при входе в Pre-Engineering, построчная проверка, процент, сравнение цен, подпись; PM выпускает только проверенное | Выдача |
+| RW6 | [Jetbuilt: presales time on desktop](https://help.jetbuilt.com/en/articles/14826214-track-presales-design-and-engineering-time-on-desktop) | Часы проектирования и инженерии на любой стадии; категории Engineering, Install, Management, Programming | Прочитано, 29.04.2026 |
+| RW7 | [Jetbuilt Install Platform](https://help.jetbuilt.com/en/articles/2286554-install-platform), [Time Tracking](https://help.jetbuilt.com/en/articles/4600217-using-time-tracking-to-track-labor), [Install Tasks](https://help.jetbuilt.com/en/articles/2286590-creating-and-viewing-install-tasks) | JetbuiltGO: задачи с шагами, фото в заметках, начало и конец работы с видом труда | Выдача |
+| RW8 | [Jetbuilt: export to QuickBooks Online](https://help.jetbuilt.com/en/articles/2348068-exporting-your-projects-to-quickbooks-online), [Payment Schedule](https://help.jetbuilt.com/en/articles/397408-adding-payment-schedule) | Проект выгружается как оценка, счета — в QuickBooks; график оплат — текст предложения | Выдача |
+| RW9 | [D-Tools Cloud Dashboard](https://docs.d-tools.cloud/en/articles/6725602-cloud-dashboard) | Режимы «Мои / Все» для сделок и проектов, «Все» — отдельными правами; блоки заказа, изменений, ресурсов | Прочитано, 10.07.2026 |
+| RW10 | [D-Tools Cloud Project Overview](https://docs.d-tools.cloud/en/articles/11040342-project-overview) | Договор и маржа, график, изменения, счета и оплаты, готовность; права на отдельные блоки | Прочитано, 12.10.2026 |
+| RW11 | [D-Tools Cloud: accessories](https://docs.d-tools.cloud/en/articles/4278117-getting-started-with-accessories), [products, labor, allowances, packages](https://docs.d-tools.cloud/en/articles/1661748-what-are-products-labor-allowances-and-packages), [project opportunity](https://docs.d-tools.cloud/en/articles/8383347-creating-a-project-opportunity) | Аксессуары Required / Recommended / Optional, пакеты, allowance, шаблоны с составом | Выдача |
+| RW12 | [D-Tools Cloud Field User view](https://docs.d-tools.cloud/en/articles/6479471-field-user-view), [mobile time tracking](https://docs.d-tools.cloud/en/articles/13178092-tracking-time-on-the-d-tools-cloud-mobile-app) | Неделя, события, часы вручную и таймером, все назначенные проекты; чек-листы, фото и таймер без связи — по выдаче | Прочитано (Field User, 17.10.2025) и выдача |
+| RW13 | [D-Tools Cloud: Project Invoice automation](https://docs.d-tools.cloud/en/articles/10353555-enabling-the-project-invoice-automation), [billing](https://docs.d-tools.cloud/en/articles/8798891-managing-billing-for-projects-and-services) | Счёт по этапу оплаты создаётся в QuickBooks Online; только QBO; оплаченный этап закрыт для правки | Выдача |
+| RW14 | [D-Tools SI: Job Cost Report](https://www.d-tools.com/resource-center/tech-terminal/how-much-is-your-revenue-find-out-with-sis-job-cost-report-module) | В SI есть Business Analytics и job cost по видам труда и фазам | Выдача, блог поставщика; в выводах не используется |
+| RW15 | [Q360 OneDashboard](https://solutions360.com/introducing-q360s-onedashboard-to-rule-them-all/) | Загрузка, backlog, WIP, выставление счетов, прогноз P&L для владельца | Прочитано, 01.10.2024; маркетинг |
+| RW16 | [Procore: accounting approver](https://support.procore.com/faq/what-is-the-accounting-approver-role), [send commitment for accounting acceptance](https://support.procore.com/integrations/acumatica-construction/tutorials/send-a-commitment-to-ERP-integrations-for-accounting-acceptance) | PM отправляет, документ блокируется, бухгалтер принимает или возвращает | Выдача |
+| RW17 | [XTEN-AV: AI design software](https://xtenav.com/5-key-benefits-ai-av-design-software-commercial-projects/) | Состав и предложение из схемы | Выдача; маркетинг, заявления не проверены |
+| RW18 | [Q-SYS System Backup and Restore](https://help.qsys.com/content/Core_Manager/Core_Management/System_BckupRestore.htm), [Reflect Design Backup](https://help.qsys.com/content/Reflect/System_Management/Design_Backup.htm), [чек-лист отката](https://yachtbyte.onrender.com/kb/av/control-systems/control-system-change-log-and-rollback-checklist/) | Копия Core Manager без файла дизайна; Reflect — до пяти копий, платно, Beta; чек-лист — вторичный источник | Выдача |
+| RW19 | [Crestron Studio: Restore Points](https://help.crestron.com/cds/main/Restrore_Points.htm) | Версионные точки восстановления, автоматически при сборке | Выдача |
+| RW20 | `gh api` по репозиториям `frappe/*`, 14.11.2026 | Лицензии: frappe — MIT, erpnext — GPL-3.0, hrms — GPL-3.0, insights / crm / helpdesk — AGPL-3.0, drive — AGPL-3.0 и в архиве. В `erpnext/regional` (version-16) нет Узбекистана. Number Card: источники Document Type, Report, Custom. В ERPNext есть Payment Schedule, Payment Terms Template, Timesheet, отчёты Accounts Receivable, Profitability Analysis, Budget Variance | Проверено по API |
+| RW21 | [Infostart: обмен УТ 11 Узбекистан → Бухгалтерия для Узбекистана 3.0](https://infostart.ru/1c/articles/1955638/) | Существует редакция «1С:Бухгалтерия для Узбекистана» 3.0; обмен EnterpriseData зависит от версий формата | Выдача; вторичный источник |
+
+## 16. Боты в мессенджерах и автоматизации, 14 ноября 2026
+
+Вопросы пользователя 14.11.2026 о Telegram-боте для расходов по скриншоту поездки, о боте группы, создающем задачи из сообщений на русском, английском и узбекском, и о встраивании «своего рода n8n»; затем: «Всю информацию которую здесь обсуждали сохрани в документах на будущее задачи». Выводы и предложения H — [research/10](10-bots-and-automations.md); отложенные задачи BOT-01, BOT-02, AUT-01 — [ROADMAP](../.progressive/project/ROADMAP.md#отложенные-задачи). Граница V1 не меняется, номер U не присваивался. Ничего не устанавливалось и не запускалось.
+
+| ID | Источник | Что подтверждает | Ограничение |
+|---|---|---|---|
+| B1 | [Telegram: privacy mode](https://core.telegram.org/bots/features#privacy-mode) | По умолчанию бот в группе видит команды, ответы себе и служебные сообщения; всё — если админ или privacy mode выключен (`/setprivacy`, затем добавить заново); сообщения других ботов не видит без отдельного режима | Прочитано 14.11.2026 |
+| B2 | [Telegram Bot API](https://core.telegram.org/bots/api) | Webhook и getUpdates взаимоисключающие; обновления хранятся не дольше 24 часов; порты webhook 443/80/88/8443 | Прочитаны первые 100 тыс. символов страницы; лимиты размера файлов не сверялись |
+| B3 | MVP-SPEC §13.4, `apps/av_platform` | TRN-01–TRN-05 Specified; DocType расходов нет; задачи — `Task` ERPNext (`pm_api.py`) | Поиск по репозиторию 14.11.2026 |
+| B4 | [Frappe HR: Expense Claim](https://docs.frappe.io/hr/expense-claim) | Expense Claim в Frappe HR: согласующий, одобренная сумма, статус, связь с проектом/задачей, проводка при подаче | Вложения на странице не описаны; лицензия hrms — GPL-3.0 (RW20) |
+| B5 | [Ollama: qwen2.5vl](https://ollama.com/library/qwen2.5vl) | Модель изображение+текст 3B/7B/32B/72B; структурированный разбор счетов, форм, таблиц | Лицензия на странице не указана; чеки и скриншоты прямо не упомянуты; точность не проверялась |
+| B6 | [Qwen3 blog](https://qwenlm.github.io/blog/qwen3/) | 119 языков и диалектов, в том числе Northern Uzbek; плотные 0.6B–32B — Apache-2.0 | Заявление производителя; качество на узбекском не проверено |
+| B7 | [Википедия: Блокировка Telegram в России (2026)](https://ru.wikipedia.org/wiki/Блокировка_Telegram_в_России_(2026)) | Звонки ограничены с 08.2025, замедление с 10.02.2026, сбои 14–16.03.2026, до 95% аномалий по OONI на 10.04.2026 | Вторичный источник; статуса на ноябрь 2026 нет; работа Bot API не описана |
+| B8 | [РБК, 10.02.2026](https://www.rbc.ru/technology_and_media/10/02/2026/698afe729a79470c08a17b91) | Роскомнадзор объявил ограничение работы Telegram | Сводка поиска |
+| B9 | [ppc.world: бот в MAX](https://ppc.world/articles/kak-sozdat-chat-bota-v-max-v-2026-godu-poshagovaya-instrukciya-i-top-10-konstruktorov/), [Green-API MAX docs](https://green-api.com/max-bot-api/docs/api) | Боты в MAX создаются на business.max.ru с модерацией и подтверждением организации; API `platform-api.max.ru` | Сторонние материалы; dev.max.ru не читалась — NOT VERIFIED |
+| B10 | [n8n LICENSE.md](https://github.com/n8n-io/n8n/blob/master/LICENSE.md) | Sustainable Use License: только внутренние деловые, некоммерческие или личные цели; распространение — бесплатно и некоммерчески; `.ee.` — Enterprise | Прочитано `gh api` 14.11.2026 |
+| B11 | `gh api` LICENSE: [activepieces](https://github.com/activepieces/activepieces), [node-red](https://github.com/node-red/node-red), [windmill](https://github.com/windmill-labs/windmill) | Activepieces — MIT вне `ee`; Node-RED — Apache-2.0; Windmill — AGPL-3.0 + проприетарные части | Функции не сверялись |
+
+| Утверждение | Статус | Основание |
+|---|---|---|
+| Бот записывает расход или задачу автоматически как готовый факт | MODIFIED | ИИ создаёт черновик; признаёт/подтверждает человек (TRN-04, ADR-005) |
+| Бот расходов реализуем | ACCEPTED (H) | Канал ввода в TRN; зависит от реализации TRN и теста распознавания (B3, B5) |
+| Бот группы реализуем | ACCEPTED (H) | Задачи уже есть; чтение группы требует админа или выключенного privacy mode (B1, B3) |
+| Telegram — надёжный канал | OPEN | Зависит от страны работы (B7); альтернатива — Max (B9) или веб-страница |
+| Встроить n8n в продукт | REJECTED | Лицензия запрещает коммерческое распространение (B10, ADR-003) |
+| Автоматизации — сначала встроенными средствами Frappe | PROPOSED (H) | ADR-001; наличие средств на 16.55.1 NOT VERIFIED |
+| Activepieces как внешний конструктор при необходимости | PROPOSED (H) | MIT вне `ee` (B11) |
+
+## 17. База знаний команды, 14 ноября 2026
+
+Слова пользователя 14.11.2026: «Также хочется создавать свою базу знаний AV Wikipedia на основе того что уже изучали». Ответы на уточнения: назначение — «Внутренняя база команды»; место хранения — «Потом подумаем над этим, скорее всего на сервере у компании». Задача отложена как KB-01 ([ROADMAP](../.progressive/project/ROADMAP.md#отложенные-задачи)); подробности и предложения H — [research/11](11-knowledge-base.md). Граница V1 не меняется, номер U не присваивался. Ничего не устанавливалось и не запускалось.
+
+| ID | Источник | Что подтверждает | Ограничение |
+|---|---|---|---|
+| K1 | `gh api repos/frappe/wiki`, 14.11.2026 | Лицензия MIT; выпуск v3.5.0 от 12.11.2026; репозиторий активен (последние изменения 14.11.2026) | — |
+| K2 | [Frappe Wiki README, ветка version-3](https://github.com/frappe/wiki/blob/version-3/README.md) | v3 — stable для Frappe v15 и v16; разделы (spaces) с правами чтения по ролям; редактор Tiptap, страницы хранятся как Markdown; запросы на изменение с просмотром разницы; история страниц; поиск SQLite FTS5; Markdown-копия страниц и `llms.txt` | Совместимость с Frappe 16.55.1 в прототипе не проверена |
+| K3 | [GitHub Sync: подключение](https://github.com/frappe/wiki/blob/version-3/docs/github-sync/connect-a-repository.md), [структура папок](https://github.com/frappe/wiki/blob/version-3/docs/github-sync/folder-structure.md) | Синхронизация только в одну сторону, из GitHub в вики; закрытые репозитории — через GitHub App с правом только на чтение; дерево страниц из папок или `.wiki.yml`; front matter `title`, `slug`, порядок, `draft`; страницы синхронизированного раздела правятся в GitHub | Только GitHub; webhook требует публичного адреса сайта, иначе кнопка «Sync now» |
+| K4 | [Preview docs locally](https://github.com/frappe/wiki/blob/version-3/docs/github-sync/preview-docs-locally.md) | `bench --site <site> wiki preview-docs <папка> --route <route> [--watch]` загружает локальную папку в раздел вики | Только при включённом developer mode — не для рабочего сервера |
+| K5 | `gh repo view`, 14.11.2026 | Репозиторий проекта на GitHub публичный | — |
+
+| Утверждение | Статус | Основание |
+|---|---|---|
+| База знаний — для своей команды, не для клиентов | ACCEPTED | Ответ пользователя 14.11.2026 |
+| Статьи — Markdown по одной теме; доказательства и решения остаются в research, статья — сводка со ссылками | PROPOSED (H) | Правило одного владельца факта (AGENTS.md, п. 4) |
+| Просмотр через Frappe Wiki v3 на сервере компании | PROPOSED (H) | MIT, на той же платформе, права по ролям, Markdown (K1, K2) |
+| Хранить исходники статей в публичном репозитории | OPEN | Решение пользователя отложено; research уже публичен (K5), закрытые материалы компании — только на сервере компании |
+| Писать в редакторе вики или в Git с синхронизацией | OPEN | GitHub Sync — только GitHub и в одну сторону (K3); Git на сервере компании потребует писать прямо в вики или своего импорта |
+| Название «AV Wikipedia» вне команды | OPEN | «Wikipedia» — товарный знак Wikimedia Foundation; для внутреннего имени не важно, для продукта — нужно другое (не проверялось юридически) |
+
+## 18. Пакет «D-Tools как референс для AV-платформы», 15 ноября 2026
+
+Источник — архив `DTools_AV_Research_Agent_Pack_2026-11-14.zip`, переданный пользователем 15.11.2026 со словами «Изучи это». Внутри: отчёт `DTOOLS_AV_PLATFORM_RESEARCH_RU.md` (и HTML-копия), `START_HERE_FOR_AI_AGENT.md`, четыре схемы в `assets/`. Авторы — составители пакета, не D-Tools. В отчёте 21 ссылка на документацию D-Tools (S01–S21) и 10 изображений с сайтов D-Tools. В репозиторий исходник не копируется. Изображения D-Tools принадлежат правообладателю и в продукт не переносятся (ADR-003). По тексту §13 пакет готовился без доступа к нашему коду. Номер E не присваивался: перечень E1–E5 ведёт MVP-SPEC.
+
+15.11.2026 четыре ключевых утверждения сверены с первоисточниками:
+
+| ID | Источник | Что подтверждает | Расхождение с пакетом |
+|---|---|---|---|
+| DT1 | [Getting started with projects](https://docs.d-tools.cloud/en/articles/1721055-getting-started-with-projects), 14.09.2026 | «You cannot create a project manually on Cloud»: проект создаётся при отметке сделки «Won» | — |
+| DT2 | [Item Status](https://docs.d-tools.cloud/en/articles/8011038-item-status), 10.10.2026 | Два статуса на позицию. Order: Unordered, Ready to Order, Draft, Ordered, Received, Client Supplied, In Stock. Install: Not Scheduled, Planned, Staged, Picked, Delivered to Site, Installed. Названия можно менять, добавлять и удалять нельзя | В пакете дата 19.05.2026. Not Scheduled и Planned — два разных статуса одного списка, а не противоречие документации (пакет, §9 п. 3) |
+| DT3 | [Cloud Release #104](https://www.d-tools.com/resource-center/d-tools-cloud-builds-revenue-recognition-into-project-billing), 12.11.2026 | Признание выручки (аванс — обязательство до счёта на поставку), выгрузка в QuickBooks Online/Desktop и Xero, проверка занятости при назначении, печать QR-этикеток на Brother | — |
+| DT4 | [Catalog categories](https://docs.d-tools.cloud/en/articles/1662142-can-i-create-my-own-categories-in-the-catalog) | Свои категории каталога в Cloud создавать нельзя | — |
+| DT5 | [Project Overview](https://docs.d-tools.cloud/en/articles/11040342-project-overview), 12.10.2026, со скриншотом | Вкладки обзора: Dashboard, To-Dos, Notes, Activity, Files. Виджеты: Contract Information и Billing and Payments (каждый по своему праву), Project Schedule, Change Orders, Job Status (процент по «Installed» и по часам), Products Ordered и Hours Used (beta) | — |
+| DT6 | [Cloud Dashboard](https://docs.d-tools.cloud/en/articles/6725602-cloud-dashboard), 10.07.2026, два скриншота | Четыре вида: мои и все сделки, мои и все проекты; «Все» — по праву. Виджеты сделок: по стадиям за месяц, мои to-do, закрываются на неделе, открытые предложения. Виджеты проектов: календарь, задачи, активные проекты, что заказать, изменения на согласовании, люди без задач | — |
+| DT7 | [Getting started with projects](https://docs.d-tools.cloud/en/articles/1721055-getting-started-with-projects), 14.09.2026, скриншоты списка, Kanban и страницы проекта | Projects — Kanban или список; разделы проекта Details, Overview, Bill of Materials, Service Contracts, Subscriptions, Change Orders, Plan; стадии проекта сгруппированы (Planning, Work In Progress, Completed) | Деление разделов на вертикальные и горизонтальные в тексте не указано; видно на скриншоте |
+| DT8 | Выдача поиска по docs.d-tools.cloud, 15.11.2026 | Пути левого меню: «Projects > Scheduling», «Projects > Change Orders», «Procurement > Purchase Orders», «Procurement > Ready to Order», Catalog, «Settings > …»; меню сворачивается | Полный список пунктов меню не найден |
+| DT9 | [Getting started with procurement](https://docs.d-tools.cloud/en/articles/2542875-getting-started-with-procurement), 07.10.2026 | Разделы Purchase Orders и Ready to Order; из Ready to Order позиции добавляются в черновик или новый PO | Колонки экрана в статье не описаны |
+| DT10 | Скриншот настройки статусов в статье [Item Status](https://docs.d-tools.cloud/en/articles/8011038-item-status) | Статусы заказа и монтажа: системное состояние, своё название, цвет | — |
+| DT11 | Скриншоты статей [Getting started with quotes](https://docs.d-tools.cloud/en/articles/1755724-getting-started-with-quotes), [Adding items to a quote](https://docs.d-tools.cloud/en/articles/7959957-adding-items-to-a-quote), [Changing the item status](https://docs.d-tools.cloud/en/articles/3607304-changing-the-item-status), [Scheduling project tasks as an event](https://docs.d-tools.cloud/en/articles/6725005-scheduling-project-tasks-as-an-event), [Getting started with opportunities](https://docs.d-tools.cloud/en/articles/1712773-getting-started-with-opportunities), [Configuring a purchase order](https://docs.d-tools.cloud/en/articles/2621129-configuring-a-purchase-order), [Getting started with procurement](https://docs.d-tools.cloud/en/articles/2542875-getting-started-with-procurement), [Viewing job costing](https://docs.d-tools.cloud/en/articles/10470382-viewing-job-costing), [Interconnects QuickStart](https://docs.d-tools.cloud/en/articles/12065181-d-tools-cloud-interconnects-quickstart), [Internal change order](https://docs.d-tools.cloud/en/articles/8540178-internal-change-order) | Композиция редактора предложения и итогов, подбора позиций, статусов позиций, планирования, Kanban сделок, заказа поставщику и сводки заказов, учёта затрат, схемы соединений, реестра изменений (разбор — research/12 §6.2) | Учебные данные D-Tools; даты статей не сверялись; в статье Field User view скриншотов нет |
+
+DT5–DT11 добавлены 15.11.2026 для разбора композиции интерфейса ([research/12 §6](12-home-and-navigation.md#6-композиция-всего-продукта-по-образцу-d-tools-cloud)); скриншоты просмотрены в браузере, в репозиторий не сохранялись. Остальные ссылки S01–S21 не открывались.
+
+| Вывод пакета | Решение | Основание / канонический владелец |
+|---|---|---|
+| Раздельные статусы закупки и монтажа | ALREADY_COVERED | MVP-SPEC §9: восемь независимых измерений вместо двух |
+| Утверждённая база не правится; изменения через версионированный CO | ALREADY_COVERED | VER-01–VER-04, S09 |
+| Каталожная позиция, строка спецификации и физическая единица — разные ID | ALREADY_COVERED | MVP-SPEC §5, SUP-04, SUP-08 |
+| Себестоимость, цена, труд, факт и маржа раздельно; деньги не float; снимки цен и курсов | ALREADY_COVERED | SAL-03, VER-01, ARC-03, §13, S18. Поля Currency во Frappe хранятся десятичными |
+| Явные формулы наценки и маржи, AC-04 «markup ≠ margin» | PROPOSED (H) | В MVP-SPEC формул нет. Кандидат в SAL-03 при реализации расчёта; менять спеку — с согласия пользователя |
+| PO на несколько проектов с распределением строк; частичная поставка; обратные движения; кабель в метрах против бухт | ALREADY_COVERED | SUP-02–SUP-06, S03, S11 |
+| Свои сущности склада и закупки (`StockLedgerEntry`, `PurchaseOrder`, `Receipt`…) | REJECTED | Закупка и склад — штатный ERPNext (U9, ADR-001); второй складской журнал запрещён (AGENTS.md п. 4) |
+| Мультиарендный SaaS с `tenant_id` как фундамент P0 | MODIFIED | ARC-01: изоляция заложена в модель, но V1 работает для одной компании; способ изоляции — Q9 |
+| BOM-редактор и составление предложений — центр продукта | NEEDS_DECISION | Противоречит позиционированию MVP-SPEC §2.2: не соревноваться с D-Tools в предложениях, принимать их BOM (ARC-04). Менять позиционирование может только пользователь |
+| Создание проекта напрямую, без выигранной сделки | REJECTED | Решение пользователя 15.11.2026 на вопрос «разрешать ли создание проекта напрямую, без сделки Sales?» — вариант «Нет — проект появляется только из передачи Sales → PM». Как у D-Tools (DT1) и S01. По решению пользователя «Да, закрыть» запрет сделан на сервере (PRJ-01, prototype/README.md) |
+| Группировка строк по помещению, системе и фазе без дублей (AC-03) | ALREADY_COVERED | MVP-SPEC §5: Location и AV System; устройство в нескольких системах — одна единица |
+| Одновременная правка BOM двумя людьми (AC-14) | PROPOSED (H) | TP-03 проверял передачу и доску, не правку спецификации. Добавить проверку при реализации BOM |
+| Нельзя подключить кабель к занятому порту (AC-17) | PROPOSED (H) | DES-02 хранит «откуда/куда и порты», правила занятости порта нет. Кандидат при реализации кабельной ведомости |
+| Выгрузка BOM совпадает с выбранной версией (AC-18) | ALREADY_COVERED | SAL-05 и S01: выданная версия и её PDF неизменны |
+| Закрытие проекта при открытых блокерах — только override с аудитом (AC-20) | ALREADY_COVERED | ACC-02 (исключение только уполномоченным решением с владельцем и сроком), CLS-01, S07–S08 |
+| Работа монтажника без связи (AC-16) | ALREADY_COVERED | Q5; решение пользователя от 14.11.2026 — веб без установки приложений ([§15](#15-рабочие-места-ролей-14-ноября-2026)) |
+| Свои категории каталога, аксессуары, пакеты, allowance | ALREADY_COVERED | research/09 (RW11); DT4 подтверждает ограничение D-Tools |
+| Признание выручки и выгрузка счетов в учётную систему | DEFERRED | DT3. Учётная система (1С или ERPNext) ждёт решения пользователя (research/09) |
+| Налоги и валюты Узбекистана не копировать с США | ALREADY_COVERED | Q2, ARC-03 |
+| Задание агенту: ERD, миграции, wireframes, backlog P0–P3, тесты AC-01–AC-20 | DEFERRED | Новые модули — после TP Gate и по поручению (MVP-SPEC §2, ROADMAP). Критерии AC сопоставлены с S01–S28 выше; отдельный набор тестов не заводится |
+
+Код не менялся, ничего не запускалось. Готовность продукта по этому материалу не меняется.
