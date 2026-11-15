@@ -2,3 +2,4 @@
 
 [post_model_sync]
 av_platform.patches.set_default_app
+av_platform.patches.remove_av_platform_module

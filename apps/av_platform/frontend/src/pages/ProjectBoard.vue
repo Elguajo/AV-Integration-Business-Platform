@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   Button,
   Checkbox,
   ErrorMessage,
-  ScrollArea,
   Select,
   Skeleton,
   TextInput,
   toast,
   useCall,
 } from 'frappe-ui'
-import { PM_API, type Board, type BoardTask, type MoveResult } from '../pmApi'
+import { PM_API, TASK_QUERY, type Board, type BoardTask, type MoveResult } from '../pmApi'
 import { ruPm } from '../i18n/pm'
 import BoardCard from '../components/BoardCard.vue'
+import OverlayScroll from '../components/OverlayScroll.vue'
+import TaskPanel from '../components/TaskPanel.vue'
 
 const NO_STAGE = '__no_stage__'
 const ANY = '__any__'
@@ -126,14 +128,19 @@ function byDue(a: BoardTask, b: BoardTask) {
 }
 
 const visible = computed(() => tasks.value.filter(matches).sort(byDue))
-const filtersActive = computed(
+const activeFilters = computed(
   () =>
-    filters.project !== ANY ||
-    filters.assignee !== ANY ||
-    !!filters.place.trim() ||
-    filters.due !== ANY ||
-    filters.blockedOnly,
+    [
+      filters.project !== ANY,
+      filters.assignee !== ANY,
+      !!filters.place.trim(),
+      filters.due !== ANY,
+      filters.blockedOnly,
+    ].filter(Boolean).length,
 )
+const filtersActive = computed(() => activeFilters.value > 0)
+// On a phone the filters fold behind one button so the first cards stay on screen.
+const filtersOpen = ref(false)
 
 const columns = computed(() => {
   const groups = new Map<string, BoardTask[]>()
@@ -248,10 +255,25 @@ function onDrop(event: DragEvent, stage: string) {
 function resetFilters() {
   Object.assign(filters, { project: ANY, assignee: ANY, place: '', due: ANY, blockedOnly: false })
 }
+
+// The open work lives in the address: /av/board?task=<name> (BRD-2). Other screens link here
+// with taskRoute() from pmApi.ts.
+const route = useRoute()
+const router = useRouter()
+const openTask = computed(() => {
+  const value = route.query[TASK_QUERY]
+  return typeof value === 'string' && value ? value : null
+})
+const openCard = computed(() => tasks.value.find((t) => t.name === openTask.value) ?? null)
+
+function closePanel() {
+  const { [TASK_QUERY]: _closed, ...query } = route.query
+  router.push({ query })
+}
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-base text-ink-gray-8">
+  <div class="relative flex h-full flex-col bg-surface-base text-ink-gray-8">
     <div class="flex items-center justify-between gap-2 px-5 pt-3">
       <span class="hidden text-sm text-ink-gray-5 sm:inline">{{ ruPm.page.subtitle }}</span>
       <div class="ml-auto flex items-center gap-2">
@@ -293,18 +315,40 @@ function resetFilters() {
       </div>
 
       <template v-else-if="board.data">
-        <div class="flex flex-wrap items-end gap-2 px-5 pb-1 pt-4" role="search">
-          <Select v-model="filters.project" :options="projectOptions" :aria-label="ruPm.filter.project" class="w-56" />
-          <Select v-model="filters.assignee" :options="assigneeOptions" :aria-label="ruPm.filter.assignee" class="w-48" />
+        <div class="flex items-center gap-2 px-5 pt-4 sm:hidden">
+          <Button
+            icon-left="lucide-sliders-horizontal"
+            :icon-right="filtersOpen ? 'lucide-chevron-up' : 'lucide-chevron-down'"
+            :aria-expanded="filtersOpen"
+            aria-controls="board-filters"
+            @click="filtersOpen = !filtersOpen"
+          >
+            {{ ruPm.filter.toggle }}
+            <span
+              v-if="activeFilters"
+              class="ml-1 rounded-full bg-surface-gray-7 px-1.5 text-p-xs tabular-nums text-ink-gray-1"
+              :aria-label="`${ruPm.filter.activeCount}: ${activeFilters}`"
+            >{{ activeFilters }}</span>
+          </Button>
+          <Button v-if="filtersActive" variant="ghost" :label="ruPm.filter.reset" @click="resetFilters" />
+        </div>
+        <div
+          id="board-filters"
+          class="flex-wrap items-end gap-2 px-5 pb-1 pt-3 sm:flex sm:pt-4"
+          :class="filtersOpen ? 'flex' : 'hidden'"
+          role="search"
+        >
+          <Select v-model="filters.project" :options="projectOptions" :aria-label="ruPm.filter.project" class="max-sm:w-full sm:w-56" />
+          <Select v-model="filters.assignee" :options="assigneeOptions" :aria-label="ruPm.filter.assignee" class="max-sm:w-full sm:w-48" />
           <TextInput
             v-model="filters.place"
             :placeholder="ruPm.filter.place"
             :aria-label="ruPm.filter.place"
-            class="w-52"
+            class="max-sm:w-full sm:w-52"
           />
-          <Select v-model="filters.due" :options="dueOptions" :aria-label="ruPm.filter.due" class="w-40" />
+          <Select v-model="filters.due" :options="dueOptions" :aria-label="ruPm.filter.due" class="max-sm:w-full sm:w-40" />
           <Checkbox v-model="filters.blockedOnly" :label="ruPm.filter.blocked" class="h-7" />
-          <Button v-if="filtersActive" variant="ghost" :label="ruPm.filter.reset" @click="resetFilters" />
+          <Button v-if="filtersActive" variant="ghost" :label="ruPm.filter.reset" class="max-sm:hidden" @click="resetFilters" />
         </div>
         <p v-if="board.data.truncated" class="px-5 pt-1 text-sm text-ink-amber-7">{{ ruPm.truncated }}</p>
 
@@ -328,7 +372,7 @@ function resetFilters() {
           <Button :label="ruPm.filter.reset" @click="resetFilters" />
         </div>
 
-        <div v-else class="flex min-h-0 flex-1 gap-3 overflow-x-auto px-5 pb-5 pt-3">
+        <OverlayScroll v-else orientation="horizontal" class="min-h-0 flex-1" content-class="flex w-max gap-3 px-5 pb-5 pt-3">
           <section
             v-for="column in columns"
             :key="column.key"
@@ -343,7 +387,7 @@ function resetFilters() {
               <h2 class="text-base-semibold text-ink-gray-8">{{ column.label }}</h2>
               <span class="text-sm tabular-nums text-ink-gray-5">{{ column.tasks.length }}</span>
             </header>
-            <ScrollArea class="min-h-0 flex-1" viewport-class="space-y-2 px-2 pb-3">
+            <OverlayScroll class="min-h-0 flex-1" content-class="space-y-2 px-2 pb-3">
               <BoardCard
                 v-for="task in column.tasks"
                 :key="task.name"
@@ -355,6 +399,7 @@ function resetFilters() {
                 :current-user="board.data.user.name"
                 :members="(task.project && membersByProject.get(task.project)) || []"
                 :can-assign-others="board.data.can_assign_others"
+                :selected="task.name === openTask"
                 @move="moveTask(task.name, $event)"
                 @rename="renameTask(task.name, $event)"
                 @assign="assignTask(task.name, $event)"
@@ -363,10 +408,19 @@ function resetFilters() {
               <p v-if="!column.tasks.length" class="px-3 py-6 text-center text-p-sm text-ink-gray-4">
                 {{ ruPm.column.empty }}
               </p>
-            </ScrollArea>
+            </OverlayScroll>
           </section>
-        </div>
+        </OverlayScroll>
       </template>
     </div>
+
+    <TaskPanel
+      v-if="openTask"
+      :key="openTask"
+      :name="openTask"
+      :card-modified="openCard?.modified"
+      @close="closePanel"
+      @updated="replaceTask"
+    />
   </div>
 </template>

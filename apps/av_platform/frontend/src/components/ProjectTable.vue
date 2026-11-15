@@ -6,6 +6,7 @@ import { date, money } from '../format'
 import StatusPill from './StatusPill.vue'
 import PeopleStack from './PeopleStack.vue'
 import DirectionMarks from './DirectionMarks.vue'
+import OverlayScroll from './OverlayScroll.vue'
 
 withDefaults(defineProps<{ rows: ProjectRow[]; moneyVisible: boolean; compact?: boolean }>(), {
   compact: false,
@@ -23,7 +24,7 @@ function obstacleOwner(row: ProjectRow) {
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <OverlayScroll orientation="horizontal">
     <table class="w-full min-w-[820px] border-collapse text-p-sm">
       <thead>
         <tr class="bg-surface-gray-2 text-left text-p-xs text-ink-gray-6">
@@ -57,7 +58,8 @@ function obstacleOwner(row: ProjectRow) {
           </td>
           <td class="px-3 py-2 text-ink-gray-7">{{ row.customer || t.noData }}</td>
           <td class="px-3 py-2">
-            <span class="block text-ink-gray-8">{{ row.pm?.full_name || row.pm?.name || t.noData }}</span>
+            <span v-if="row.pm" class="block text-ink-gray-8">{{ row.pm.full_name || row.pm.name }}</span>
+            <span v-else class="block text-ink-gray-5">{{ moneyVisible ? t.card.pmNone : t.card.pmHidden }}</span>
             <PeopleStack v-if="row.team.length" :people="row.team" class="mt-1" />
           </td>
           <td class="px-3 py-2"><StatusPill :status="row.status" /></td>
@@ -83,5 +85,5 @@ function obstacleOwner(row: ProjectRow) {
         </tr>
       </tbody>
     </table>
-  </div>
+  </OverlayScroll>
 </template>

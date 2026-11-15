@@ -30,6 +30,9 @@ READ_DOCTYPES = ("Project", "Task", "Quotation")
 
 LIST_LIMIT = 500
 MY_TASKS_SHOWN = 6
+DECISIONS_SHOWN = 5
+# review_handover accepts or returns a package only for its assigned PM holding this role.
+REVIEW_ROLE = "AV Project Manager"
 CARD_TASK_LIMIT = 500
 CARD_LIST_LIMIT = 50
 EXPIRING_DAYS = 30
@@ -351,9 +354,64 @@ def _my_tasks():
     }
 
 
+def _snapshot_customer(snapshot_json):
+    """Customer name frozen in the handover snapshot (commercial.HEADER_FIELDS), if readable."""
+    try:
+        quotation = json.loads(snapshot_json or "{}").get("quotation") or {}
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return quotation.get("customer_name") or None
+
+
+def _decisions():
+    """Handover packages waiting for the current user's PM decision (SAL-06, review_handover).
+
+    None for users who cannot take that decision, so they get no section at all. Rows come from
+    get_list, so the AV Handover permission rules (permissions.handover_query) apply as in Desk.
+    The total counts every waiting package; only the oldest DECISIONS_SHOWN are listed.
+    """
+    user = frappe.session.user
+    if REVIEW_ROLE not in frappe.get_roles(user) or not frappe.has_permission("AV Handover", "read"):
+        return None
+    # A draft also has review_status «Pending»; only a submitted package waits for the PM.
+    filters = {"docstatus": 1, "review_status": "Pending", "project_manager": user}
+    rows = frappe.get_list(
+        "AV Handover", filters=filters,
+        fields=["name", "project_name", "customer", "quotation", "accepted_value", "currency",
+                "owner", "modified"],
+        order_by="modified asc", limit_page_length=0,
+    )
+    shown = rows[:DECISIONS_SHOWN]
+    snapshots = dict(frappe.get_list(
+        "AV Handover", filters={"name": ["in", [r.name for r in shown] or [""]]},
+        fields=["name", "snapshot_json"], as_list=True, limit_page_length=0,
+    ))
+    names = _user_names([r.owner for r in shown])
+    return {
+        "items": [{
+            "name": r.name,
+            "project_name": r.project_name,
+            "customer": _snapshot_customer(snapshots.get(r.name)) or r.customer,
+            "quotation": r.quotation,
+            # Set from the quotation on submission; unknown stays None, never zero.
+            "value": ({"amount": flt(r.accepted_value), "currency": r.currency}
+                      if r.accepted_value is not None and r.currency else None),
+            # After submission only the PM review may save the package
+            # (AVHandover.before_update_after_submit), so while it waits `modified` is the
+            # submission time. AVHandover.before_insert makes the author the owner; submitting
+            # needs the AV Sales role and the author or assigned PM (handover_permission), and
+            # sales_api.create_handover inserts and submits in one step, so the author submits.
+            "submitted_on": str(r.modified) if r.modified else None,
+            "submitted_by": _person(r.owner, names),
+        } for r in shown],
+        "total": len(rows),
+    }
+
+
 @frappe.whitelist(methods=["GET"])
 def get_overview():
-    """Home page: the user's works, the funnel (director only) and the projects in execution."""
+    """Home page: decisions waiting for the PM, the user's works, the funnel (director only) and
+    the projects in execution."""
     _require(HOME_ROLES)
     current_day = getdate(today())
     projects = _projects(current_day)
@@ -361,6 +419,7 @@ def get_overview():
         "today": str(current_day),
         "user": {"name": frappe.session.user,
                  "full_name": _user_names([frappe.session.user]).get(frappe.session.user)},
+        "decisions": _decisions(),
         "funnel": _funnel(current_day) if can_view_funnel() else None,
         "my_tasks": _my_tasks(),
         "projects": projects,

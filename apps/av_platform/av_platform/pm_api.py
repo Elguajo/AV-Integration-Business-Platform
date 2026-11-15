@@ -5,12 +5,14 @@ here or by the ERPNext Task controller. Rejections are returned as stable codes;
 frontend owns the human-readable texts (ARC-03).
 """
 
+import html
 import json
+import re
 from datetime import timedelta
 
 import frappe
 from frappe.desk.form import assign_to
-from frappe.utils import getdate, today
+from frappe.utils import getdate, strip_html, today
 
 from av_platform.pm_board import (
     can_see_task,
@@ -21,6 +23,7 @@ from av_platform.pm_board import (
 
 BOARD_LIMIT = 500
 SUBTASK_LIMIT = 100
+COMMENT_LIMIT = 100
 SUBJECT_MAX_LENGTH = 140  # Task.subject is a Data field.
 SOON_DAYS = 2
 CLOSED_STATUSES = ("Completed", "Cancelled")
@@ -411,3 +414,74 @@ def get_subtasks(task: str):
                            fields=TASK_FIELDS, order_by="exp_end_date asc, creation asc",
                            limit_page_length=SUBTASK_LIMIT)
     return {"task": doc.name, "tasks": _cards(rows)}
+
+
+_BLOCK_END = re.compile(r"(?i)<br\s*/?>|</(?:p|div|li|h[1-6]|blockquote|pre)>")
+
+
+def plain_text(value):
+    """Stored rich text (Text Editor, comments) as plain text; the panel never renders stored HTML."""
+    if not value:
+        return None
+    text = html.unescape(strip_html(_BLOCK_END.sub("\n", value)))
+    text = "\n".join(line.strip() for line in text.replace("\xa0", " ").splitlines())
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text or None
+
+
+def _task_comments(task):
+    """Newest comments of a work, returned oldest first. Read access to the work was checked."""
+    rows = frappe.get_all("Comment", filters={"reference_doctype": "Task", "reference_name": task,
+                                              "comment_type": "Comment"},
+                          fields=["name", "owner", "comment_email", "comment_by", "content", "creation"],
+                          order_by="creation desc", limit_page_length=COMMENT_LIMIT + 1)
+    truncated = len(rows) > COMMENT_LIMIT
+    rows = rows[:COMMENT_LIMIT]
+    names = _user_names([r.comment_email or r.owner for r in rows])
+    comments = [{
+        "name": r.name,
+        "author": {"name": r.comment_email or r.owner,
+                   "full_name": names.get(r.comment_email or r.owner) or r.comment_by or None},
+        "text": plain_text(r.content),
+        "created": str(r.creation),
+    } for r in reversed(rows)]
+    return comments, truncated
+
+
+@frappe.whitelist(methods=["GET"])
+def get_task_detail(task: str):
+    """One work for the side panel of the board and "My tasks" (BRD-2).
+
+    The same visibility as a card action: Frappe read permission on the stored Task plus the board
+    participation rule; a hidden and a missing work get the same answer. Returns the card fields,
+    the description and comments as plain text, the readable subtasks and what the panel may offer.
+    Actions stay with move_task / rename_task / assign_task / unassign_task.
+    """
+    doc = _task_for_action(task)
+    user = frappe.session.user
+    project_readable = bool(doc.project) and bool(frappe.has_permission("Project", "read", doc=doc.project))
+    members = []
+    if doc.project and (sees_all_projects() or doc.project in member_projects()):
+        members = _project_members([doc.project]).get(doc.project, [])
+    subtasks = frappe.get_list("Task", filters={"parent_task": doc.name, "is_template": 0,
+                                                "status": ["!=", "Cancelled"]},
+                               fields=TASK_FIELDS, order_by="exp_end_date asc, creation asc",
+                               limit_page_length=SUBTASK_LIMIT)
+    comments, comments_truncated = _task_comments(doc.name)
+    names = _user_names(members + [user])
+    return {
+        "user": {"name": user, "full_name": names.get(user)},
+        "task": _fresh_card(doc),
+        "project_name": (frappe.db.get_value("Project", doc.project, "project_name")
+                         if project_readable else None),
+        "project_readable": project_readable,
+        "description": plain_text(doc.description),
+        "stages": [{"name": s.name, "label": s.label, "is_closed": bool(s.is_closed)}
+                   for s in enabled_stages()],
+        "members": [{"name": u, "full_name": names.get(u)} for u in members],
+        "can_move": bool(doc.has_permission("write")),
+        "can_assign_others": _can_assign_others(),
+        "subtasks": _cards(subtasks),
+        "comments": comments,
+        "comments_truncated": comments_truncated,
+    }

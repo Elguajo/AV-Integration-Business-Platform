@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Badge, Button, ErrorMessage, ScrollArea, Skeleton, useCall } from 'frappe-ui'
-import { API, type QuotationDetail } from '../api'
+import { API, quotationHeadline, type QuotationDetail } from '../api'
 import { ru } from '../i18n/ru'
 import { date, money, quantity } from '../format'
 import HandoverDialog from './HandoverDialog.vue'
@@ -23,6 +23,14 @@ const handoverTheme = computed(() => {
   const status = d.value?.handover?.review_status
   return status === 'Accepted' ? 'green' : status === 'Returned' ? 'amber' : 'blue'
 })
+
+const headline = computed(() => (d.value ? quotationHeadline(d.value.quotation) : null))
+
+// The server marks the current version; a returned package cannot be handed over again
+// (handover_exists), so the next step is the newer current version, if one exists.
+const newerCurrent = computed(() =>
+  d.value?.versions.find((v) => v.is_current && v.name !== d.value?.quotation.name),
+)
 
 function deskUrl(doctype: string, name: string) {
   return `/desk/${doctype}/${encodeURIComponent(name)}`
@@ -64,7 +72,8 @@ async function onHandedOver() {
     <ScrollArea v-else-if="d" class="min-h-0 flex-1" viewport-class="px-4 pb-10 pt-4">
       <div class="space-y-6">
       <section>
-        <h2 class="text-2xl text-ink-gray-9">{{ d.quotation.customer_name || d.quotation.party_name }}</h2>
+        <h2 class="break-words text-2xl text-ink-gray-9">{{ headline?.main }}</h2>
+        <p v-if="headline?.sub" class="mt-0.5 break-words text-base text-ink-gray-6">{{ headline.sub }}</p>
         <dl class="mt-3 grid grid-cols-[8rem_1fr] gap-y-1.5 text-sm">
           <dt class="text-ink-gray-5">{{ ru.detail.date }}</dt>
           <dd class="text-ink-gray-7">{{ date(d.quotation.transaction_date) }}</dd>
@@ -188,6 +197,31 @@ async function onHandedOver() {
             class="rounded-4 bg-surface-amber-2 px-2 py-1.5 text-p-sm text-ink-amber-7"
           >
             <span class="font-medium">{{ ru.detail.reviewNote }}:</span> {{ d.handover.review_note }}
+          </div>
+          <div
+            v-if="d.handover.review_status === 'Returned'"
+            class="space-y-2 rounded-4 border border-outline-amber-2 px-2 py-2"
+          >
+            <p class="text-p-sm font-medium text-ink-gray-8">{{ ru.detail.returnedTitle }}</p>
+            <p class="text-p-sm text-ink-gray-7">
+              {{ newerCurrent ? ru.detail.returnedNewer : ru.detail.returnedHint }}
+            </p>
+            <Button
+              v-if="newerCurrent"
+              variant="solid"
+              class="w-full"
+              icon-left="lucide-arrow-right"
+              :label="ru.detail.openCurrent"
+              @click="emit('open', newerCurrent.name)"
+            />
+            <Button
+              v-else
+              class="w-full"
+              icon-left="lucide-external-link"
+              :label="ru.detail.openDesk"
+              :href="deskUrl('quotation', props.name)"
+              target="_blank"
+            />
           </div>
         </div>
 

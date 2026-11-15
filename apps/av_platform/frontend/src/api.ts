@@ -105,6 +105,23 @@ export interface QuotationDetail {
   pm_options: { name: string; full_name: string | null }[]
 }
 
+// get_workspace returns at most this many quotations (modified desc) and no total.
+// Mirrors limit_page_length in sales_api.get_workspace; reaching it means the list may be cut.
+export const WORKSPACE_LIMIT = 200
+
+// Card/panel headline: the quotation title when it says more than the customer name
+// (ERPNext defaults the title to the customer), otherwise the customer.
+export function quotationHeadline(q: {
+  title: string | null
+  customer_name: string | null
+  party_name: string
+}) {
+  const customer = q.customer_name || q.party_name
+  const title = (q.title ?? '').trim()
+  const distinct = title && title !== q.customer_name && title !== q.party_name
+  return distinct ? { main: title, sub: customer } : { main: customer, sub: null }
+}
+
 export const API = {
   workspace: '/api/v2/method/av_platform.sales_api.get_workspace',
   quotation: '/api/v2/method/av_platform.sales_api.get_quotation',

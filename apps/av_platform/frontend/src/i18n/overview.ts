@@ -14,6 +14,16 @@ export const ruOverview = {
   statusScope: 'Состояние — только по зарегистрированным работам. Закупка, монтаж, проверки и деньги в оценку не входят: учёт ещё не ведётся.',
   greeting: (name: string) => `Добрый день, ${name}`,
   scope: { label: 'Чьи проекты', mine: 'Мои', all: 'Все' },
+  decisions: {
+    title: 'Ждут вашего решения',
+    hint: 'Пакеты передачи от продаж: принять в работу или вернуть на доработку.',
+    all: 'Все',
+    count: (shown: number, total: number) => `${shown} из ${total}`,
+    empty: 'Нет пакетов, ждущих вашего решения.',
+    quotation: (name: string) => `КП ${name}`,
+    submitted: (on: string, by: string | null) => (by ? `Передан ${on}, ${by}` : `Передан ${on}`),
+    open: 'Открыть пакет, чтобы принять или вернуть',
+  },
   myTasks: {
     title: 'Мои дела',
     all: 'Все мои задачи',
@@ -50,7 +60,9 @@ export const ruOverview = {
     emptyFilter: 'Под фильтр ничего не попало.',
     error: 'Не удалось загрузить проекты',
     kanbanHint: 'Колонки — состояние зарегистрированных работ. Стадии проекта появятся, когда будет решён их состав.',
-    directionsHint: 'Работы · закупка · монтаж · проверки · деньги. Серый — ещё не ведётся, а не ноль.',
+    directionsHint: 'Направления: работы · закупка · монтаж · проверки · деньги. Серый квадрат — учёт ещё не ведётся, а не ноль.',
+    statusFilterHint: 'Нажмите на состояние, чтобы показать только такие проекты; ещё раз — снять фильтр.',
+    statusFilterOn: 'фильтр включён',
   },
   table: {
     project: 'Проект',
@@ -70,6 +82,14 @@ export const ruOverview = {
     tests: 'Проверки',
     money: 'Деньги',
     notTracked: 'ещё не ведётся',
+    // Hover and screen-reader state of one mark in the «Направления» column.
+    untrackedState: 'учёт не ведётся',
+    states: {
+      problem: 'проблема',
+      risk: 'риск',
+      unknown: 'нет данных',
+      on_plan: 'по плану',
+    } satisfies Record<ProjectStatus, string>,
   },
   card: {
     title: 'Проект',
@@ -118,6 +138,18 @@ export const ruOverview = {
     nobody: 'не назначен',
     due: 'срок',
     milestone: 'веха',
+    // PM comes only from the accepted handover: without one the project has no PM; roles that cannot
+    // read handovers get no PM at all, which is hidden, not absent.
+    pmNone: 'PM не назначен',
+    pmHidden: 'PM скрыт',
+    statusScope: 'Состояние — только по зарегистрированным работам.',
+    untracked: (names: string[]) => {
+      const list = names.map((n) => n.toLocaleLowerCase('ru')).join(', ')
+      return `${list.charAt(0).toLocaleUpperCase('ru')}${list.slice(1)} — учёт ещё не ведётся, это не ноль.`
+    },
+    colWork: 'Работа',
+    colStage: 'Этап',
+    colAssignee: 'Исполнитель',
   },
   funnel: {
     title: 'Воронка продаж',

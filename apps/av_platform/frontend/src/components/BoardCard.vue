@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, Dropdown, toast, useCall } from 'frappe-ui'
 import type { DropdownOptions } from 'frappe-ui'
-import { PM_API, deskTaskUrl, type BoardStage, type BoardTask, type Person, type Subtasks } from '../pmApi'
+import {
+  PM_API,
+  TASK_QUERY,
+  stageSteps,
+  taskShellUrl,
+  type BoardStage,
+  type BoardTask,
+  type Person,
+  type Subtasks,
+} from '../pmApi'
 import { ruPm } from '../i18n/pm'
 import { date } from '../format'
 
@@ -15,6 +25,8 @@ const props = defineProps<{
   currentUser: string
   members: Person[]
   canAssignOthers: boolean
+  /** The work is open in the side panel. */
+  selected?: boolean
 }>()
 const emit = defineEmits<{
   move: [stage: string]
@@ -32,11 +44,25 @@ const isMember = computed(() => props.members.some((m) => m.name === props.curre
 
 // Stages are ordered by the server (AV Work Stage.sequence). Completing means moving to the first
 // closed stage; the server still refuses blocked works and open dependencies.
-const stageIndex = computed(() => props.stages.findIndex((s) => s.name === props.task.stage))
-const currentStage = computed(() => props.stages[stageIndex.value] ?? null)
-const isClosed = computed(() => !!currentStage.value?.is_closed)
-const closedStage = computed(() => props.stages.find((s) => s.is_closed) ?? null)
-const nextStage = computed(() => (isClosed.value ? null : props.stages[stageIndex.value + 1] ?? null))
+const steps = computed(() => stageSteps(props.stages, props.task.stage))
+const isClosed = computed(() => steps.value.isClosed)
+const closedStage = computed(() => steps.value.closedStage)
+const nextStage = computed(() => steps.value.nextStage)
+
+// The card opens the work's side panel on the same screen (`?task=<name>`, BRD-2).
+const route = useRoute()
+const router = useRouter()
+function panelLink(name: string) {
+  return { query: { ...route.query, [TASK_QUERY]: name } }
+}
+
+function openFromCard(event: MouseEvent) {
+  // Clicks on the card's own controls and text selection keep their meaning.
+  const target = event.target as HTMLElement | null
+  if (editing.value || target?.closest('a, button, input, [role="menu"]')) return
+  if (window.getSelection()?.toString()) return
+  router.push(panelLink(props.task.name))
+}
 
 // Inline rename.
 const editing = ref(false)
@@ -60,7 +86,7 @@ function finishRename(save: boolean) {
 
 async function copyLink() {
   try {
-    await navigator.clipboard.writeText(new URL(deskTaskUrl(props.task.name), location.origin).href)
+    await navigator.clipboard.writeText(taskShellUrl(props.task.name))
     toast.success(t.linkCopied, { description: props.task.name })
   } catch {
     toast.error(t.linkNotCopied)
@@ -145,11 +171,14 @@ function onDragStart(event: DragEvent) {
     :class="[
       task.block_reason ? 'border-outline-amber-2' : 'border-outline-gray-1',
       busy ? 'opacity-60' : 'hover:border-outline-gray-3',
-      canMove && !busy && !editing ? 'cursor-grab' : '',
+      selected ? 'ring-2 ring-outline-gray-4' : '',
+      canMove && !busy && !editing ? 'cursor-grab' : 'cursor-pointer',
     ]"
     :draggable="canMove && !busy && !editing"
     :aria-busy="busy"
+    :aria-current="selected || undefined"
     @dragstart="onDragStart"
+    @click="openFromCard"
   >
     <div class="flex items-start gap-2">
       <span
@@ -184,19 +213,16 @@ function onDragStart(event: DragEvent) {
           @keydown.esc.prevent="finishRename(false)"
           @blur="finishRename(true)"
         />
-        <a
+        <RouterLink
           v-else
-          :href="deskTaskUrl(task.name)"
-          target="_blank"
-          rel="noopener"
+          :to="panelLink(task.name)"
           class="block hyphens-auto break-words text-base-medium hover:underline"
           lang="ru"
           :class="isClosed ? 'text-ink-gray-5' : 'text-ink-gray-9'"
-          :title="ruPm.card.open"
         >
-          <span v-if="task.is_milestone" class="lucide-flag mr-1 inline-block size-3.5 align-[-2px] text-ink-gray-5" :aria-label="ruPm.card.milestone" />
+          <span v-if="task.is_milestone" class="lucide-flag mr-1 inline-block size-3.5 align-[-2px] text-ink-gray-5" role="img" :aria-label="ruPm.card.milestone" />
           {{ task.subject }}
-        </a>
+        </RouterLink>
       </div>
 
       <div class="-mr-1 -mt-0.5 flex shrink-0 items-center">
@@ -277,7 +303,7 @@ function onDragStart(event: DragEvent) {
       <span
         class="shrink-0 rounded-4 tabular-nums"
         :class="{
-          'font-medium text-ink-red-4': task.due_state === 'overdue',
+          'font-medium text-ink-red-6': task.due_state === 'overdue',
           'bg-surface-amber-2 px-1.5 font-medium text-ink-amber-7': task.due_state === 'today',
           'text-ink-amber-7': task.due_state === 'soon',
           'text-ink-gray-5': !task.due_state,
@@ -298,7 +324,7 @@ function onDragStart(event: DragEvent) {
 
     <ul v-if="showSubtasks" class="mt-2 space-y-1 border-t border-outline-gray-1 pt-2" :aria-label="t.subtasks">
       <li v-if="subtasks.loading && !subtasks.data" class="text-p-xs text-ink-gray-5">{{ t.loading }}</li>
-      <li v-else-if="subtasks.error" class="text-p-xs text-ink-red-4">{{ t.subtasksError }}</li>
+      <li v-else-if="subtasks.error" class="text-p-xs text-ink-red-6">{{ t.subtasksError }}</li>
       <li v-else-if="subtasks.data && !subtasks.data.tasks.length" class="text-p-xs text-ink-gray-5">{{ t.noVisibleSubtasks }}</li>
       <li
         v-for="sub in subtasks.data?.tasks ?? []"
@@ -310,17 +336,15 @@ function onDragStart(event: DragEvent) {
           class="mt-0.5 size-3.5 shrink-0"
           :aria-label="sub.stage && closedStages.has(sub.stage) ? t.completed : undefined"
         />
-        <a
-          :href="deskTaskUrl(sub.name)"
-          target="_blank"
-          rel="noopener"
+        <RouterLink
+          :to="panelLink(sub.name)"
           class="min-w-0 flex-1 break-words hover:underline"
           :class="sub.stage && closedStages.has(sub.stage) ? 'text-ink-gray-5' : 'text-ink-gray-8'"
-        >{{ sub.subject }}</a>
+        >{{ sub.subject }}</RouterLink>
         <span
           v-if="sub.end"
           class="shrink-0 text-p-xs tabular-nums"
-          :class="sub.due_state === 'overdue' ? 'text-ink-red-4' : 'text-ink-gray-5'"
+          :class="sub.due_state === 'overdue' ? 'font-medium text-ink-red-6' : 'text-ink-gray-5'"
         >{{ date(sub.end) }}</span>
       </li>
     </ul>

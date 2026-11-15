@@ -13,6 +13,8 @@ from av_platform.pm_api import (
     due_state,
     get_board,
     get_subtasks,
+    get_task_detail,
+    plain_text,
     rename_task,
     unassign_task,
 )
@@ -225,3 +227,67 @@ class TestBoardCardActions(IntegrationTestCase):
         frappe.db.set_value("Task", self.task, "exp_end_date", getdate(today()) + timedelta(days=2))
         frappe.set_user(self.pm)
         self.assertEqual(self._card(self.task)["due_state"], "soon")
+
+    # Task side panel (BRD-2)
+
+    def test_plain_text_drops_markup_and_keeps_lines(self):
+        self.assertEqual(plain_text("<div><p>Route <b>cable</b></p><p>A &amp; B&nbsp;</p></div>"),
+                         "Route cable\nA & B")
+        self.assertEqual(plain_text("<script>alert(1)</script>"), "alert(1)")
+        self.assertIsNone(plain_text("<p><br></p>"))
+        self.assertIsNone(plain_text(None))
+
+    def test_task_detail_returns_card_description_comments_and_subtasks(self):
+        frappe.db.set_value("Task", self.task, {"description": "<p>Route <b>cable</b></p>",
+                                                "is_group": 1})
+        doc = frappe.get_doc("Task", self.task)
+        doc.add_comment("Comment", "<p>Cable route agreed</p>")
+        doc.add_comment("Info", "System note is not a comment")
+        step = self._task(self.project, "Bracket A", parent_task=self.task)
+
+        frappe.set_user(self.pm)
+        detail = get_task_detail(self.task)
+        self.assertEqual(detail["task"]["name"], self.task)
+        self.assertEqual(detail["task"]["subject"], "Mount displays")
+        self.assertEqual(detail["description"], "Route cable")
+        self.assertEqual([c["text"] for c in detail["comments"]], ["Cable route agreed"])
+        self.assertFalse(detail["comments_truncated"])
+        self.assertEqual([t["name"] for t in detail["subtasks"]], [step])
+        self.assertTrue(detail["project_readable"])
+        self.assertEqual(detail["project_name"],
+                         frappe.db.get_value("Project", self.project, "project_name"))
+        self.assertEqual([m["name"] for m in detail["members"]], [self.pm, self.worker])
+        self.assertTrue(detail["can_move"])
+        self.assertTrue(detail["can_assign_others"])
+        self.assertTrue(detail["stages"])
+
+    def test_task_detail_shows_unknown_as_none(self):
+        frappe.set_user(self.worker)
+        detail = get_task_detail(self.task)
+        self.assertIsNone(detail["description"])
+        self.assertIsNone(detail["task"]["start"])
+        self.assertIsNone(detail["task"]["end"])
+        self.assertIsNone(detail["task"]["subtasks"])
+        self.assertEqual(detail["comments"], [])
+        self.assertFalse(detail["can_assign_others"])
+
+    def test_task_detail_is_refused_without_read_permission(self):
+        hidden = self._task(self._project([]), "Hidden work")
+        frappe.set_user(self.outsider)
+        with self.assertRaises(frappe.PermissionError):
+            get_task_detail(self.task)
+        frappe.set_user(self.worker)
+        with self.assertRaises(frappe.PermissionError):
+            get_task_detail(hidden)
+        # A missing work gets the same answer as a hidden one.
+        with self.assertRaises(frappe.PermissionError):
+            get_task_detail("TASK-DOES-NOT-EXIST")
+
+    def test_assignee_outside_project_reads_task_but_not_project(self):
+        self._todo(self.task, self.outsider)
+        frappe.set_user(self.outsider)
+        detail = get_task_detail(self.task)
+        self.assertEqual(detail["task"]["name"], self.task)
+        self.assertFalse(detail["project_readable"])
+        self.assertIsNone(detail["project_name"])
+        self.assertEqual(detail["members"], [])

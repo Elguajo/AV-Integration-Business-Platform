@@ -11,6 +11,7 @@ import ProjectTable from '../components/ProjectTable.vue'
 import StatusPill from '../components/StatusPill.vue'
 import PeopleStack from '../components/PeopleStack.vue'
 import DirectionMarks from '../components/DirectionMarks.vue'
+import OverlayScroll from '../components/OverlayScroll.vue'
 
 const ANY = '__any__'
 const COUNT_STYLE: Record<ProjectStatus, string> = {
@@ -74,7 +75,7 @@ function toggleStatus(value: ProjectStatus) {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-surface-gray-1 text-ink-gray-8">
+  <OverlayScroll class="h-full bg-surface-gray-1 text-ink-gray-8">
     <div class="mx-auto max-w-7xl space-y-4 px-3 pb-10 pt-4 sm:px-5">
       <RegisterHeader
         v-model:view="view"
@@ -109,18 +110,22 @@ function toggleStatus(value: ProjectStatus) {
 
       <template v-else-if="data.data">
         <p class="text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
-        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" :aria-label="t.register.status">
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" :aria-label="t.register.status" :title="t.register.statusFilterHint">
           <button
             v-for="s in STATUSES"
             :key="s"
             type="button"
-            class="rounded-6 border bg-surface-base px-3 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-outline-gray-4"
-            :class="status === s ? 'border-outline-gray-5' : 'border-outline-gray-2'"
+            class="rounded-6 border px-3 py-2 text-left hover:border-outline-gray-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-outline-gray-4"
+            :class="status === s ? 'border-outline-gray-5 bg-surface-gray-2 ring-1 ring-outline-gray-3' : 'border-outline-gray-2 bg-surface-base'"
             :aria-pressed="status === s"
             @click="toggleStatus(s)"
           >
-            <span class="block text-p-sm text-ink-gray-6">{{ t.status[s] }}</span>
+            <span class="flex items-center gap-1.5 text-p-sm text-ink-gray-6">
+              <span class="grow">{{ t.status[s] }}</span>
+              <span v-if="status === s" class="lucide-check size-3.5 shrink-0 text-ink-gray-8" aria-hidden="true" />
+            </span>
             <span class="block text-2xl font-semibold tabular-nums" :class="COUNT_STYLE[s]">{{ counts[s] }}</span>
+            <span v-if="status === s" class="sr-only">{{ t.register.statusFilterOn }}</span>
           </button>
         </div>
 
@@ -135,7 +140,7 @@ function toggleStatus(value: ProjectStatus) {
           <ProjectTable :rows="rows" :money-visible="data.data.money_visible" />
         </section>
 
-        <section v-else class="flex gap-3 overflow-x-auto pb-2">
+        <OverlayScroll v-else orientation="horizontal" content-class="flex w-max gap-3 pb-2">
           <div v-for="s in STATUSES" :key="s" class="flex w-72 shrink-0 flex-col gap-2">
             <div class="rounded-4 px-3 py-2 text-p-sm font-medium" :class="COLUMN_STYLE[s]">
               {{ t.status[s] }} · {{ rows.filter((r) => r.status === s).length }}
@@ -163,11 +168,11 @@ function toggleStatus(value: ProjectStatus) {
               </span>
             </a>
           </div>
-        </section>
+        </OverlayScroll>
 
         <p class="text-p-xs text-ink-gray-5">{{ view === 'kanban' ? t.register.kanbanHint : t.register.directionsHint }}</p>
         <p v-if="data.data.projects.truncated" class="text-p-sm text-ink-amber-7">{{ t.projects.truncated }}</p>
       </template>
     </div>
-  </div>
+  </OverlayScroll>
 </template>

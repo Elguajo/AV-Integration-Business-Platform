@@ -31,7 +31,7 @@ CUSTOMER = "Synthetic TP-03 Customer"
 PARALLEL = 4
 RACE_ROUNDS = 10
 BLOCK_SECONDS = 3
-METHOD = "/api/method/av_platform.av_platform.doctype.av_handover.av_handover.review_handover"
+METHOD = "/api/method/av_platform.av_sales.doctype.av_handover.av_handover.review_handover"
 INJECTED = "TP-03 injected failure after Project insert"
 
 
@@ -133,7 +133,7 @@ def short(result):
 
 def review_with_injected_failure(name):
     """Connection A fails after inserting the Project; its transaction stays open."""
-    from av_platform.av_platform.doctype.av_handover.av_handover import (
+    from av_platform.av_sales.doctype.av_handover.av_handover import (
         AVHandover,
         review_handover,
     )
@@ -183,7 +183,7 @@ def race(run, password):
 
 
 def blocked_then_commit(run, password):
-    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+    from av_platform.av_sales.doctype.av_handover.av_handover import review_handover
 
     handover = new_handover(run, "C2")
     client = Client(PM, password)
@@ -255,7 +255,7 @@ def failure_then_retry(run, password):
 
 def _second_connection(name, out, ready):
     """Connection B in its own thread: take a read snapshot, then accept behind A's lock."""
-    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+    from av_platform.av_sales.doctype.av_handover.av_handover import review_handover
 
     frappe.init(site=SITE, sites_path=SITES)
     frappe.connect()
@@ -273,7 +273,7 @@ def _second_connection(name, out, ready):
 
 
 def stale_snapshot(run, password):
-    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+    from av_platform.av_sales.doctype.av_handover.av_handover import review_handover
 
     handover = new_handover(run, "C5")
     frappe.set_user(PM)
@@ -300,7 +300,7 @@ def stale_snapshot(run, password):
 
 def batch_keeps_writes(run, password):
     """Several reviews in one transaction: a refused review must not discard an earlier accept."""
-    from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+    from av_platform.av_sales.doctype.av_handover.av_handover import review_handover
 
     done = new_handover(run, "C6-done")
     frappe.set_user(PM)

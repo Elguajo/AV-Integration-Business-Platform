@@ -11,6 +11,8 @@ export interface ShellBoot {
   landing: string | null
   /** Whether the user may open Desk (system users only). */
   desk: boolean
+  /** New documents the user may start from the header «+»; they open in Desk. Never Project (PRJ-01). */
+  create: { doctype: string; href: string }[]
 }
 
 declare global {
@@ -26,6 +28,7 @@ export const boot: ShellBoot = window.av_boot ?? {
   views: [],
   landing: null,
   desk: false,
+  create: [],
 }
 
 /** Route of the user's start screen inside the shell. */

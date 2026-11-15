@@ -81,6 +81,29 @@ export interface MyTasks {
   can_move: boolean
 }
 
+// Side panel of one work (BRD-2). Description and comments come as plain text.
+export interface TaskComment {
+  name: string
+  author: Person
+  text: string | null
+  created: string
+}
+
+export interface TaskDetail {
+  user: Person
+  task: BoardTask
+  project_name: string | null
+  project_readable: boolean
+  description: string | null
+  stages: BoardStage[]
+  members: Person[]
+  can_move: boolean
+  can_assign_others: boolean
+  subtasks: BoardTask[]
+  comments: TaskComment[]
+  comments_truncated: boolean
+}
+
 export type MoveResult =
   | { ok: true; task: BoardTask }
   | { ok: false; code: MoveRejection; task: BoardTask | null }
@@ -93,6 +116,37 @@ export const PM_API = {
   unassign: '/api/v2/method/av_platform.pm_api.unassign_task',
   subtasks: '/api/v2/method/av_platform.pm_api.get_subtasks',
   myTasks: '/api/v2/method/av_platform.pm_api.get_my_tasks',
+  taskDetail: '/api/v2/method/av_platform.pm_api.get_task_detail',
+}
+
+/**
+ * The open work lives in the address as `?task=<Task name>` on /av/board and /av/my-tasks, so a
+ * panel is linkable and Back closes it. Other screens open a work with this route location, e.g.
+ * `router.push(taskRoute(name))` or `<RouterLink :to="taskRoute(name)">`.
+ */
+export const TASK_QUERY = 'task'
+
+export function taskRoute(name: string, screen: '/board' | '/my-tasks' = '/board') {
+  return { path: screen, query: { [TASK_QUERY]: name } }
+}
+
+/** Absolute shell link to a work, for «Копировать ссылку». */
+export function taskShellUrl(name: string) {
+  return new URL(`/av/board?${TASK_QUERY}=${encodeURIComponent(name)}`, location.origin).href
+}
+
+/** Stage position of a work: the server orders stages (AV Work Stage.sequence) and decides moves. */
+export function stageSteps(stages: BoardStage[], stage: string | null) {
+  const index = stages.findIndex((s) => s.name === stage)
+  const current = stages[index] ?? null
+  const isClosed = !!current?.is_closed
+  return {
+    current,
+    isClosed,
+    closedStage: stages.find((s) => s.is_closed) ?? null,
+    // A work without a stage starts at the first one.
+    nextStage: isClosed ? null : stages[index + 1] ?? null,
+  }
 }
 
 export function deskTaskUrl(name: string) {

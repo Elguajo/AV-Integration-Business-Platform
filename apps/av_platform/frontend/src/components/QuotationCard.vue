@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import type { QuotationRow } from '../api'
+import { computed } from 'vue'
+import { quotationHeadline, type QuotationRow } from '../api'
 import { date, money } from '../format'
 
-defineProps<{ row: QuotationRow; selected: boolean }>()
+const props = defineProps<{ row: QuotationRow; selected: boolean }>()
 defineEmits<{ select: [] }>()
+
+const headline = computed(() => quotationHeadline(props.row))
 </script>
 
 <template>
@@ -14,11 +17,14 @@ defineEmits<{ select: [] }>()
     :aria-pressed="selected"
     @click="$emit('select')"
   >
-    <div class="truncate text-base-medium text-ink-gray-9">
-      {{ row.customer_name || row.party_name }}
+    <div class="truncate text-base-medium text-ink-gray-9" :title="headline.main">
+      {{ headline.main }}
     </div>
-    <div class="mt-1.5 flex items-center gap-1.5 text-sm text-ink-gray-5">
-      <span class="lucide-file-text size-3.5" aria-hidden="true" />
+    <div v-if="headline.sub" class="mt-0.5 truncate text-sm text-ink-gray-6" :title="headline.sub">
+      {{ headline.sub }}
+    </div>
+    <div class="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">
+      <span class="lucide-file-text size-3.5 shrink-0" aria-hidden="true" />
       <span class="truncate tabular-nums">{{ row.name }}</span>
     </div>
     <div class="mt-2 flex items-center justify-between gap-2">

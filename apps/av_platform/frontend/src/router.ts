@@ -4,6 +4,9 @@ import { boot, landingPath, type ViewKey } from './boot'
 declare module 'vue-router' {
   interface RouteMeta {
     view?: ViewKey
+    // A record page (project card): the app menu folds to icons so the record's own column of
+    // sections is the one wide menu on screen (research/12 §6.2а).
+    record?: boolean
   }
 }
 
@@ -18,7 +21,7 @@ export const router = createRouter({
       path: '/projects/:project',
       component: () => import('./pages/ProjectCard.vue'),
       props: true,
-      meta: { view: 'projects' },
+      meta: { view: 'projects', record: true },
     },
     { path: '/board', component: () => import('./pages/ProjectBoard.vue'), meta: { view: 'board' } },
     {

@@ -3,6 +3,7 @@
 // Works are filtered by stage with a row of chips; the grouping tree returns with rooms and systems.
 // Sections of modules that do not exist yet are not shown; directions without data say so.
 import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, ErrorMessage, Skeleton, useCall } from 'frappe-ui'
 import {
   OVERVIEW_API,
@@ -15,18 +16,40 @@ import {
 import { ruOverview as t } from '../i18n/overview'
 import { date, money } from '../format'
 import RecordShell, { type RecordSection } from '../components/RecordShell.vue'
+import OverlayScroll from '../components/OverlayScroll.vue'
 import StatusPill from '../components/StatusPill.vue'
 import PeopleStack from '../components/PeopleStack.vue'
+import TaskPanel from '../components/TaskPanel.vue'
+import { TASK_QUERY } from '../pmApi'
 
 const props = defineProps<{ project?: string }>()
 
 const NO_STAGE = '__none__'
+// Directions that have no data in the card yet; they are listed in one line, never as zero.
+const UNTRACKED = ['procurement', 'install', 'tests', 'money'] as const
 const data = useCall<ProjectCardData, { project: string }>({
   url: OVERVIEW_API.project,
   params: () => ({ project: props.project ?? '' }),
   refetch: true,
 })
 const section = ref('overview')
+// A work opens in the side panel on this page: /av/projects/<id>?task=<name>. The panel reads
+// through the server's own permission check, so it also serves users without the board screen.
+const route = useRoute()
+const router = useRouter()
+const openTask = computed(() => {
+  const value = route.query[TASK_QUERY]
+  return typeof value === 'string' && value ? value : null
+})
+
+function taskLink(name: string) {
+  return { query: { ...route.query, [TASK_QUERY]: name } }
+}
+
+function closePanel() {
+  const { [TASK_QUERY]: _closed, ...query } = route.query
+  router.push({ query })
+}
 const stage = ref<string | null>(null)
 
 watch(
@@ -84,8 +107,8 @@ function workStatus(work: Work) {
 </script>
 
 <template>
-  <div class="h-full text-ink-gray-8">
-    <div v-if="data.error || forbidden || !card" class="h-full overflow-y-auto px-3 pb-10 pt-4 sm:px-5">
+  <div class="relative h-full text-ink-gray-8">
+    <OverlayScroll v-if="data.error || forbidden || !card" class="h-full" content-class="px-3 pb-10 pt-4 sm:px-5">
       <div v-if="data.error || forbidden" class="mx-auto max-w-xl pt-6">
         <p class="text-lg-semibold text-ink-gray-8">{{ t.card.error }}</p>
         <p v-if="forbidden" class="mt-2 text-p-base text-ink-gray-6">{{ t.card.forbidden }}</p>
@@ -99,26 +122,34 @@ function workStatus(work: Work) {
         <Skeleton class="h-14 w-full rounded-6" />
         <Skeleton class="h-96 w-full rounded-6" />
       </div>
-    </div>
+    </OverlayScroll>
 
     <RecordShell v-else-if="p" v-model:active="section" :sections="sections" :sections-label="t.card.sectionsLabel">
       <template #nav-top>
         <a
           :href="shellUrl('projects')"
-          class="flex h-8 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-4 px-2 text-p-sm text-ink-gray-6 hover:bg-surface-gray-2 lg:mb-2"
+          class="flex h-8 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-4 px-2 text-p-sm text-ink-gray-6 hover:bg-surface-gray-2"
           :title="t.card.back"
           @click="openShell($event, 'projects')"
         >
           <span class="lucide-arrow-left size-4 shrink-0" aria-hidden="true" />
           <span class="max-lg:sr-only">{{ t.card.back }}</span>
         </a>
+        <!-- Whose sections these are: the column reads as the project's menu, not a second app menu. -->
+        <div class="mb-2 mt-1 space-y-1 border-b border-outline-gray-2 px-2 pb-3 max-lg:hidden">
+          <span class="block text-p-xs tabular-nums text-ink-gray-5">{{ p.name }}</span>
+          <span class="line-clamp-2 block text-p-sm font-semibold text-ink-gray-9" :title="p.project_name || p.name">{{ p.project_name || p.name }}</span>
+          <StatusPill :status="p.status" />
+        </div>
       </template>
       <template #header>
         <h1 class="min-w-0 break-words text-lg font-semibold text-ink-gray-9">{{ p.project_name || p.name }}</h1>
-        <span class="text-p-sm text-ink-gray-5">{{ p.name }}</span>
+        <span class="text-p-sm text-ink-gray-5 lg:hidden">{{ p.name }}</span>
         <StatusPill :status="p.status" />
         <span class="text-p-sm text-ink-gray-6">
-          {{ p.customer || t.noData }} · {{ t.projects.pm }} {{ p.pm?.full_name || p.pm?.name || t.noData }}
+          {{ p.customer || t.noData }} ·
+          <template v-if="p.pm">{{ t.projects.pm }} {{ p.pm.full_name || p.pm.name }}</template>
+          <template v-else>{{ card.money_visible ? t.card.pmNone : t.card.pmHidden }}</template>
         </span>
         <span class="grow" />
         <PeopleStack :people="p.team" />
@@ -131,11 +162,10 @@ function workStatus(work: Work) {
         <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
       </template>
 
-      <p class="text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
-
       <!-- Overview -->
       <template v-if="section === 'overview'">
-        <div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
+        <p class="text-p-sm text-ink-gray-6">{{ t.card.statusScope }}</p>
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2">
           <div class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2">
             <span class="text-p-xs text-ink-gray-6">{{ t.directions.works }}</span>
             <span class="block text-lg font-semibold tabular-nums text-ink-gray-9">
@@ -145,15 +175,9 @@ function workStatus(work: Work) {
               {{ t.card.blocked }}: {{ blockedCount }} · {{ t.card.overdue }}: {{ overdueCount }}
             </span>
           </div>
-          <div
-            v-for="key in (['procurement', 'install', 'tests', 'money'] as const)"
-            :key="key"
-            class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2"
-          >
-            <span class="text-p-xs text-ink-gray-6">{{ t.directions[key] }}</span>
-            <span class="block text-p-sm font-medium text-ink-gray-5">{{ t.directions.notTracked }}</span>
-          </div>
         </div>
+        <!-- Directions without a registry yet: one muted line. A direction that gets data leaves UNTRACKED and gets a tile above. -->
+        <p class="text-p-sm text-ink-gray-5">{{ t.card.untracked(UNTRACKED.map((key) => t.directions[key])) }}</p>
 
         <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
           <section class="rounded-6 border border-outline-gray-2 p-3">
@@ -181,7 +205,7 @@ function workStatus(work: Work) {
               <li v-for="work in card.obstacles.slice(0, 6)" :key="work.name" class="flex gap-2 py-1.5">
                 <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="work.kind === 'blocked' ? 'bg-surface-red-5' : 'bg-surface-amber-5'" aria-hidden="true" />
                 <div class="min-w-0 text-p-sm">
-                  <a :href="deskUrl('Task', work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+                  <RouterLink :to="taskLink(work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</RouterLink>
                   <p v-if="work.block_reason" class="text-ink-amber-7">{{ work.block_reason }}</p>
                   <p class="text-p-xs text-ink-gray-5">
                     {{ work.kind === 'blocked' ? t.card.blocked : t.card.overdue }} · {{ people(work) }} ·
@@ -208,7 +232,7 @@ function workStatus(work: Work) {
           <p v-if="!card.milestones.length" class="text-p-sm text-ink-gray-5">{{ t.card.noMilestones }}</p>
           <ul v-else class="divide-y divide-outline-gray-1">
             <li v-for="work in card.milestones" :key="work.name" class="flex flex-wrap items-baseline justify-between gap-2 py-1.5 text-p-sm">
-              <a :href="deskUrl('Task', work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+              <RouterLink :to="taskLink(work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</RouterLink>
               <span :class="dueClass(work)">{{ date(work.end) }}</span>
             </li>
           </ul>
@@ -240,20 +264,20 @@ function workStatus(work: Work) {
           </button>
         </div>
         <p v-if="!card.works.length" class="rounded-6 border border-dashed border-outline-gray-3 p-6 text-center text-p-sm text-ink-gray-6">{{ t.card.noWorks }}</p>
-        <div v-else class="overflow-x-auto rounded-6 border border-outline-gray-2">
+        <OverlayScroll v-else orientation="horizontal" class="rounded-6 border border-outline-gray-2">
           <table class="w-full min-w-[640px] border-collapse text-p-sm">
             <thead>
               <tr class="bg-surface-gray-2 text-left text-p-xs text-ink-gray-6">
-                <th class="px-3 py-2 font-medium">{{ t.table.works }}</th>
-                <th class="px-3 py-2 font-medium">{{ t.card.stages }}</th>
-                <th class="px-3 py-2 font-medium">{{ t.myTasks.title }}</th>
+                <th class="px-3 py-2 font-medium">{{ t.card.colWork }}</th>
+                <th class="px-3 py-2 font-medium">{{ t.card.colStage }}</th>
+                <th class="px-3 py-2 font-medium">{{ t.card.colAssignee }}</th>
                 <th class="px-3 py-2 font-medium">{{ t.card.end }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="work in shownWorks" :key="work.name" class="border-b border-outline-gray-1">
                 <td class="px-3 py-2">
-                  <a :href="deskUrl('Task', work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+                  <RouterLink :to="taskLink(work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</RouterLink>
                   <span v-if="work.is_milestone" class="ml-1.5 rounded-3 bg-surface-blue-2 px-1.5 text-p-xs text-ink-blue-6">{{ t.card.milestone }}</span>
                   <span v-if="work.block_reason" class="block text-p-xs text-ink-amber-7">{{ work.block_reason }}</span>
                 </td>
@@ -263,7 +287,7 @@ function workStatus(work: Work) {
               </tr>
             </tbody>
           </table>
-        </div>
+        </OverlayScroll>
         <p v-if="card.works_truncated" class="text-p-sm text-ink-amber-7">{{ t.card.worksTruncated }}</p>
       </template>
 
@@ -318,7 +342,7 @@ function workStatus(work: Work) {
           <p v-if="!card.my_works.length" class="text-ink-gray-5">{{ t.card.noMyWorks }}</p>
           <ul v-else class="space-y-1.5">
             <li v-for="work in card.my_works.slice(0, 6)" :key="work.name">
-              <a :href="deskUrl('Task', work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</a>
+              <RouterLink :to="taskLink(work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</RouterLink>
               <span class="block text-p-xs" :class="dueClass(work)">{{ t.card.due }} {{ date(work.end) }}</span>
             </li>
           </ul>
@@ -340,8 +364,9 @@ function workStatus(work: Work) {
             </li>
           </ul>
         </section>
-        <p class="text-p-xs text-ink-gray-5">{{ t.notTracked.text }}</p>
       </template>
     </RecordShell>
+
+    <TaskPanel v-if="openTask" :key="openTask" :name="openTask" @close="closePanel" @updated="data.reload()" />
   </div>
 </template>

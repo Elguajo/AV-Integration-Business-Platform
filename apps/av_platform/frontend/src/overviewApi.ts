@@ -90,9 +90,27 @@ export interface MyTasksSummary {
   truncated: boolean
 }
 
+/** A submitted handover package waiting for the current user's PM decision. */
+export interface PendingHandover {
+  name: string
+  project_name: string | null
+  customer: string | null
+  quotation: string
+  value: Amount | null
+  submitted_on: string | null
+  submitted_by: Person | null
+}
+
+/** Null when the user cannot decide on handovers; `total` counts beyond the shown items. */
+export interface Decisions {
+  items: PendingHandover[]
+  total: number
+}
+
 export interface Overview {
   today: string
   user: Person
+  decisions: Decisions | null
   funnel: Funnel | null
   my_tasks: MyTasksSummary | null
   projects: ProjectList
@@ -144,7 +162,17 @@ export const OVERVIEW_API = {
 }
 
 export function deskUrl(doctype: string, name: string) {
-  return `/desk/${doctype.toLowerCase().replace(/ /g, '-')}/${encodeURIComponent(name)}`
+  return `/desk/${deskSlug(doctype)}/${encodeURIComponent(name)}`
+}
+
+/** Desk list of a DocType; Desk applies query parameters as list filters. */
+export function deskListUrl(doctype: string, filters: Record<string, string> = {}) {
+  const query = new URLSearchParams(filters).toString()
+  return `/desk/${deskSlug(doctype)}${query ? `?${query}` : ''}`
+}
+
+function deskSlug(doctype: string) {
+  return doctype.toLowerCase().replace(/ /g, '-')
 }
 
 /** Address of a shell screen, e.g. shellUrl('projects', name) → /av/projects/<name>. */

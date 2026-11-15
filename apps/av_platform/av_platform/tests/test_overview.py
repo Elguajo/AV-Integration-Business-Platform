@@ -7,7 +7,7 @@ from frappe.desk.form import assign_to
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, getdate, today
 
-from av_platform.av_platform.doctype.av_handover.av_handover import review_handover
+from av_platform.av_sales.doctype.av_handover.av_handover import review_handover
 from av_platform.demo import seed
 from av_platform.overview import (
     DIRECTOR_ROLE,
@@ -375,6 +375,71 @@ class TestOverviewAPI(IntegrationTestCase):
         self.assertLess(order.index(late), order.index(calm))
         self.assertEqual(self._row(result, calm)["status"], "on_plan")
         self.assertGreaterEqual(result["status_counts"]["problem"], 1)
+
+    def _pending_handover(self, pm, submit=True):
+        """A handover of a fresh customer's only quotation, created by Sales for `pm`."""
+        quote = self._quotation(self._customer(), add_days(today(), 30))
+        frappe.set_user(self.demo["sales_user"])
+        try:
+            doc = frappe.get_doc({
+                "doctype": "AV Handover", "quotation": quote,
+                "project_name": "Decision " + frappe.generate_hash(length=6), "project_manager": pm,
+                "customer_approval_reference": "SYNTHETIC: overview decision test.",
+            }).insert()
+            if submit:
+                doc.submit()
+        finally:
+            frappe.set_user("Administrator")
+        return doc.name
+
+    def test_home_lists_only_packages_waiting_for_the_users_decision(self):
+        pm = self._person_with(["AV Project Manager", "Projects User"])
+        other_pm = self._person_with(["AV Project Manager", "Projects User"])
+        waiting = self._pending_handover(pm)
+        draft = self._pending_handover(pm, submit=False)
+        foreign = self._pending_handover(other_pm)
+        frappe.set_user(pm)
+        decisions = get_overview()["decisions"]
+        self.assertEqual([i["name"] for i in decisions["items"]], [waiting])
+        self.assertEqual(decisions["total"], 1)
+        self.assertNotIn(draft, [i["name"] for i in decisions["items"]])
+        self.assertNotIn(foreign, [i["name"] for i in decisions["items"]])
+        item = decisions["items"][0]
+        doc = frappe.get_doc("AV Handover", waiting)
+        self.assertEqual(item["quotation"], doc.quotation)
+        self.assertEqual(item["customer"], frappe.db.get_value("Customer", doc.customer, "customer_name"))
+        self.assertEqual(item["value"], {"amount": doc.accepted_value, "currency": doc.currency})
+        self.assertEqual(item["submitted_by"]["name"], self.demo["sales_user"])
+        self.assertIsNotNone(item["submitted_on"])
+        # A decided package no longer waits.
+        review_handover(waiting, "return", "SYNTHETIC: correct the scope.")
+        self.assertEqual(get_overview()["decisions"], {"items": [], "total": 0})
+        # The other PM's package is listed for that PM only.
+        frappe.set_user(other_pm)
+        self.assertEqual([i["name"] for i in get_overview()["decisions"]["items"]], [foreign])
+
+    def test_users_who_do_not_decide_on_handovers_get_no_section(self):
+        self._pending_handover(self.demo["pm_user"])
+        manager = self._person_with(["Projects Manager", "Projects User"])
+        # The director reads every handover but is not the assigned PM and does not decide.
+        frappe.set_user(self.DIRECTOR)
+        self.assertIsNone(get_overview()["decisions"])
+        # A Projects Manager reaches the home page but cannot review handovers.
+        frappe.set_user(manager)
+        self.assertIsNone(get_overview()["decisions"])
+
+    def test_decision_total_does_not_depend_on_the_display_limit(self):
+        pm = self._person_with(["AV Project Manager", "Projects User"])
+        first = self._pending_handover(pm)
+        self._pending_handover(pm)
+        self._pending_handover(pm)
+        frappe.set_user(pm)
+        with patch("av_platform.overview.DECISIONS_SHOWN", 2):
+            decisions = get_overview()["decisions"]
+        self.assertEqual(decisions["total"], 3)
+        self.assertEqual(len(decisions["items"]), 2)
+        # The package that has waited longest comes first.
+        self.assertEqual(decisions["items"][0]["name"], first)
 
     def test_funnel_counts_current_versions_and_flags_expired_deals(self):
         customer = frappe.db.get_value("Quotation", self.demo["quotations"]["Q2"], "party_name")

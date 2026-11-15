@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, Dropdown } from 'frappe-ui'
-import type { BoardStage, MyTask } from '../pmApi'
+import { TASK_QUERY, type BoardStage, type MyTask } from '../pmApi'
 import { ruPm } from '../i18n/pm'
 import { date } from '../format'
 
@@ -12,8 +13,22 @@ const props = defineProps<{
   canMove: boolean
   saving: boolean
   showAssignees: boolean
+  /** The work is open in the side panel. */
+  selected?: boolean
 }>()
 const emit = defineEmits<{ move: [stage: string] }>()
+
+// The row opens the work's side panel on the same screen (`?task=<name>`, BRD-2).
+const route = useRoute()
+const router = useRouter()
+const panelLink = computed(() => ({ query: { ...route.query, [TASK_QUERY]: props.task.name } }))
+
+function openFromRow(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('a, button, input, [role="menu"]')) return
+  if (window.getSelection()?.toString()) return
+  router.push(panelLink.value)
+}
 
 const place = computed(() => [props.task.room, props.task.system].filter(Boolean).join(' · '))
 const assignees = computed(() =>
@@ -32,21 +47,17 @@ const otherStages = computed(() =>
 
 <template>
   <li
-    class="flex flex-wrap items-start gap-x-4 gap-y-2 border-b border-outline-gray-1 px-3 py-2.5 last:border-b-0"
-    :class="saving ? 'opacity-60' : 'hover:bg-surface-gray-1'"
+    class="flex cursor-pointer flex-wrap items-start gap-x-4 gap-y-2 border-b border-outline-gray-1 px-3 py-2.5 last:border-b-0"
+    :class="[saving ? 'opacity-60' : 'hover:bg-surface-gray-1', selected ? 'bg-surface-gray-2' : '']"
     :aria-busy="saving"
+    :aria-current="selected || undefined"
+    @click="openFromRow"
   >
     <div class="min-w-0 flex-1 basis-64">
-      <a
-        :href="`/desk/task/${encodeURIComponent(task.name)}`"
-        target="_blank"
-        rel="noopener"
-        class="text-base-medium text-ink-gray-9 hover:underline"
-        :title="ruPm.card.open"
-      >
-        <span v-if="task.is_milestone" class="lucide-flag mr-1 inline-block size-3.5 align-[-2px] text-ink-gray-5" :aria-label="ruPm.card.milestone" />
+      <RouterLink :to="panelLink" class="text-base-medium text-ink-gray-9 hover:underline">
+        <span v-if="task.is_milestone" class="lucide-flag mr-1 inline-block size-3.5 align-[-2px] text-ink-gray-5" role="img" :aria-label="ruPm.card.milestone" />
         {{ task.subject }}
-      </a>
+      </RouterLink>
       <div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-ink-gray-5">
         <span v-if="projectName" class="truncate">{{ projectName }}</span>
         <span v-if="place" class="flex items-center gap-1">
@@ -69,7 +80,7 @@ const otherStages = computed(() =>
       <span class="rounded-full bg-surface-gray-2 px-2 py-0.5 text-ink-gray-7">{{ stageLabel }}</span>
       <span
         class="whitespace-nowrap tabular-nums"
-        :class="task.is_overdue ? 'font-medium text-ink-red-4' : 'text-ink-gray-5'"
+        :class="task.is_overdue ? 'font-medium text-ink-red-6' : 'text-ink-gray-5'"
         :title="task.is_overdue ? ruPm.card.overdue : undefined"
       >
         {{ task.end ? date(task.end) : ruPm.card.noDate }}

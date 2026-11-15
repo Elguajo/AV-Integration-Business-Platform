@@ -540,3 +540,38 @@ Desk остаётся back-office: ERPNext, справочники, формы �
 - 15.11.2026: `npm run build` PASS; `manage.ps1 up` PASS (migrate удалил страницы, меню и Dock AV); `manage.ps1 test` 124/124 PASS (`test_shell.py` — 11 тестов вместо `test_desk.py`); `access-check` 0 утечек; локальные 8/8.
 - Браузер под PM: оболочка, меню по ролям, карточка проекта с фильтром этапов, сворачивание панели, доска на всю высоту, 375 px с выезжающим меню. Под Sales/руководителем/монтажником, тёмная тема, ruff — NOT RUN.
 - По ходу: класса `bg-surface-white` в frappe-ui 1.2.0 нет — заменён на `bg-surface-base`; PostCSS-изоляция переписывает `<style>` в index.html (сброс отступа — атрибутом body); Frappe отдаёт `/desk/...` до website_redirects, поэтому старые `/desk/av-*` не переадресуются (ADR-006 уточнён).
+
+### ui-05-r1
+Task: UI-05 — шапка оболочки по образцу D-Tools Cloud
+Status: DONE
+Freshness: CHECKED 15.11.2026
+Source: вопрос и решение пользователя 15.11.2026
+Supersedes: NONE
+
+#### Request
+```text
+Как в D Tools и других продуктах реализован Header по уму? → Да, по D-Tools
+```
+
+#### Prompt
+```text
+Сделать шапку /av по схеме D-Tools Cloud (research/12 §6.2в): слева название раздела, справа общие для
+всех экранов поиск (Ctrl+K: разделы, «создать», проекты, предложения, клиенты), «+» (новые документы в
+Desk по праву create, без Project — PRJ-01), уведомления (Notification Log Frappe, только свои), Desk и
+аватар с выходом. Поиск и уведомления — серверные методы shell.py через проверку прав Frappe. Действия
+экранов остаются в их тулбарах. Не входит: справка, чат, выбор проекта, websocket, перевод.
+```
+
+#### Freshness check
+15.11.2026: Frappe 16.55.1 в контейнере — `notification_log.py`: `get_notification_logs`, `mark_as_read`,
+`mark_all_as_read` (whitelist, фильтр по for_user); permission_query_conditions пропускает Administrator,
+поэтому свой метод фильтрует по получателю явно. frappe-ui 1.2.0: Dialog (bare, autofocus), Popover, Dropdown
+(группы), Avatar.
+
+#### Current checkpoint
+Выполнено. Изменения в рабочем дереве не закоммичены.
+
+#### Outcome / evidence
+- 15.11.2026: `npm run build` PASS; `manage.ps1 up` PASS; `test_header.py` 8/8, всё приложение 134/134 PASS; `access-check` 0 утечек; локальные 8/8.
+- Браузер под PM: Ctrl+K → поиск → Enter открывает проект; колокольчик 7 непрочитанных; «+» только «Задача»; меню аватара; 375 и 320 px без горизонтальной прокрутки. Другие роли в браузере, тёмная тема, ruff — NOT RUN.
+- По ходу: `text-ink-white` нет в frappe-ui 1.2.0 (заменён на `text-ink-gray-1`); путь назад в шапке дублировал колонку разделов карточки — убран.

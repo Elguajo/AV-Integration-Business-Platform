@@ -12,7 +12,7 @@
 
 ## Context hints
 - `prototype/manage.ps1`, `prototype/compose.yml`, `prototype/Dockerfile`, `prototype/restore_check.py`
-- `apps/av_platform/av_platform/commercial.py`, `permissions.py`, `av_platform/doctype/av_handover/`, `tests/test_commercial.py`
+- `apps/av_platform/av_platform/commercial.py`, `permissions.py`, `av_sales/doctype/av_handover/`, `tests/test_commercial.py`
 
 ## In scope
 - TP-01 воспроизводимый запуск: check/up/seed, повторный запуск, версии.
@@ -41,6 +41,7 @@
 - [x] PRJ-01 — проект только из передачи Sales → PM (15.11.2026; итоги в prototype/README.md, раздел PRJ-01) (решение пользователя 15.11.2026: «Нет — проект появляется только из передачи Sales → PM», затем «Да, закрыть»; research/04 §18): сервер отказывает в создании Project по всем каналам (форма Desk, REST, импорт, копирование), кроме принятия передачи PM в `review_handover`, Administrator и System Manager. Задание prj-01-r1.
 - [x] ADM-01 — роли администратора и модератора (15.11.2026; итоги в prototype/README.md, раздел ADM-01; браузер и ruff — NOT RUN) (поручение пользователя 15.11.2026 «Надо б создать роль модератора и администратора системы», ответы «Управляет сотрудниками» и «AV-роль поверх System Manager»; MVP-SPEC §3): `user_admin.py` — AV Administrator несёт System Manager; AV Moderator ведёт учётные записи сотрудников и выдаёт только рабочие роли, проверка на сервере в `User.before_validate`.
 - [x] UI-04 — своя оболочка рабочих мест на `/av`, Desk — back-office (15.11.2026; итоги в prototype/README.md, раздел UI-04; браузер под другими ролями, тёмная тема и ruff — NOT RUN) (решение пользователя 15.11.2026 «B — своя оболочка», ADR-006 заменил ADR-004). Задание ui-04-r1.
+- [x] UI-05 — шапка оболочки по образцу D-Tools Cloud: поиск Ctrl+K, «+» (без проекта, PRJ-01), уведомления из Notification Log, Desk и аватар справа (15.11.2026; итоги в prototype/README.md, раздел UI-05; браузер под другими ролями, тёмная тема и ruff — NOT RUN) (решение пользователя 15.11.2026 «Да, по D-Tools»; research/12 §6.2в). Задание ui-05-r1.
 
 ### Доработка доски PM-01 по разбору YouGile (BRD)
 Решение пользователя 14.11.2026: «Я б сперва записал бы все что нашел потом поэтапно начал бы внедрять». Основание — [research/07 §7](../../research/07-work-management-reference.md#7-доска-yougile-и-наша-доска-pm-01-подробное-сравнение) (номера строк §7.4 в скобках). Порядок и состав — H; каждый этап начинается только по решению пользователя. Общие условия всех этапов: решение принимает сервер (`pm_api`), права как у `move_task`, одна задача ERPNext без копий, отказ — стабильный код и текст на клиенте, Frappe-тесты и проверка в браузере под PM. Не переносим — §7.5. Этапы меняют `pm_api.py` и `ProjectBoard.vue`; TP-02 меняет права Task — не вести параллельно в одних файлах.

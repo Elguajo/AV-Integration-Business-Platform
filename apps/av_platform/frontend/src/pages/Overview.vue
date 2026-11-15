@@ -1,14 +1,16 @@
 <script setup lang="ts">
-// Home page (DIR-01, UI-03): the user's works, the funnel for the director, projects in execution.
+// Home page (DIR-01, UI-03): handovers waiting for the PM's decision, the user's works, the funnel
+// for the director, projects in execution.
 // Layout follows research/12 §6.2: greeting and «Мои / Все» on top, works and funnel side by side,
 // then the project table. The server decides every value.
 import { computed, ref } from 'vue'
 import { Button, ErrorMessage, Skeleton, useCall } from 'frappe-ui'
-import { OVERVIEW_API, deskUrl, openShell, shellUrl, type Amount, type Overview } from '../overviewApi'
+import { OVERVIEW_API, deskListUrl, deskUrl, openShell, shellUrl, type Amount, type Overview } from '../overviewApi'
 import type { DueBucket } from '../pmApi'
 import { ruOverview as t } from '../i18n/overview'
 import { date, money, UNKNOWN } from '../format'
 import ProjectTable from '../components/ProjectTable.vue'
+import OverlayScroll from '../components/OverlayScroll.vue'
 
 const HOME_ROWS = 8
 const SHOWN_BUCKETS: DueBucket[] = ['overdue', 'today', 'week']
@@ -37,6 +39,14 @@ const firstName = computed(() => {
   const user = data.data?.user
   return (user?.full_name || user?.name || '').split(' ')[0]
 })
+// The same filters as the server's list of packages waiting for this user's decision.
+const decisionsListUrl = computed(() =>
+  deskListUrl('AV Handover', {
+    docstatus: '1',
+    review_status: 'Pending',
+    project_manager: data.data?.user.name ?? '',
+  }),
+)
 const maxCount = computed(() => Math.max(1, ...(data.data?.funnel?.stages.map((s) => s.count) ?? [1])))
 
 function amounts(totals: Amount[]) {
@@ -45,7 +55,7 @@ function amounts(totals: Amount[]) {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-surface-gray-1 text-ink-gray-8">
+  <OverlayScroll class="h-full bg-surface-gray-1 text-ink-gray-8">
     <div class="mx-auto max-w-7xl space-y-4 px-3 pb-10 pt-4 sm:px-5">
       <div v-if="data.error" class="mx-auto max-w-xl pt-6">
         <p class="text-lg-semibold text-ink-gray-8">{{ t.error }}</p>
@@ -82,6 +92,48 @@ function amounts(totals: Amount[]) {
           </div>
           <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
         </div>
+
+        <!-- Only for users who decide on handovers; the PM accepts or returns a package in its Desk form. -->
+        <section v-if="data.data.decisions" class="rounded-6 border border-outline-gray-2 bg-surface-base p-4" aria-labelledby="av-home-decisions">
+          <div class="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h2 id="av-home-decisions" class="text-base font-semibold text-ink-gray-9">{{ t.decisions.title }}</h2>
+            <span v-if="data.data.decisions.total" class="text-p-sm tabular-nums text-ink-gray-5">
+              {{ t.decisions.count(data.data.decisions.items.length, data.data.decisions.total) }}
+            </span>
+            <span class="grow" />
+            <a v-if="data.data.decisions.total" :href="decisionsListUrl" class="text-p-sm text-ink-blue-link hover:underline">
+              {{ t.decisions.all }}
+            </a>
+          </div>
+          <p v-if="!data.data.decisions.total" class="text-p-sm text-ink-gray-5">{{ t.decisions.empty }}</p>
+          <template v-else>
+            <p class="mb-2 text-p-xs text-ink-gray-5">{{ t.decisions.hint }}</p>
+            <ul class="divide-y divide-outline-gray-1">
+              <li
+                v-for="item in data.data.decisions.items"
+                :key="item.name"
+                class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2"
+              >
+                <div class="min-w-0">
+                  <a
+                    :href="deskUrl('AV Handover', item.name)"
+                    :title="t.decisions.open"
+                    class="text-p-sm font-medium text-ink-gray-8 hover:underline"
+                  >{{ item.project_name || item.name }}</a>
+                  <p class="text-p-xs text-ink-gray-5">
+                    {{ item.customer || UNKNOWN }} · {{ t.decisions.quotation(item.quotation) }} · {{ item.name }}
+                  </p>
+                </div>
+                <div class="text-left sm:text-right">
+                  <p class="text-p-sm tabular-nums text-ink-gray-8">{{ money(item.value?.amount, item.value?.currency) }}</p>
+                  <p class="text-p-xs text-ink-gray-5">
+                    {{ t.decisions.submitted(date(item.submitted_on), item.submitted_by?.full_name ?? null) }}
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </template>
+        </section>
 
         <div class="grid gap-4" :class="data.data.funnel ? 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]' : ''">
           <section class="rounded-6 border border-outline-gray-2 bg-surface-base p-4" aria-labelledby="av-home-tasks">
@@ -176,5 +228,5 @@ function amounts(totals: Amount[]) {
         </section>
       </template>
     </div>
-  </div>
+  </OverlayScroll>
 </template>

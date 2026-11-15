@@ -4,6 +4,7 @@
 
 ## Recommended stack
 - Runtime/framework: Frappe v16 + ERPNext v16 (Python) — сервер, DocType, права, бизнес-правила. Своё приложение `apps/av_platform` расширяет ERPNext без правки core: `doc_events`, `extend_doctype_class`, `override_whitelisted_methods`, custom fields/fixtures, свои DocType и патчи.
+- Модули Frappe внутри `av_platform` — по предметным областям MVP-SPEC: `AV Sales` (§6, `AV Handover`), `AV Projects` (§11, `AV Work Stage`). Новая область получает модуль `AV <Область>`; без префикса нельзя, имена модулей общие на сайт и пересекаются с ERPNext (`Projects`). Структура `apps/av_platform/av_platform/<модуль>/doctype/` — стандарт `bench new-app`.
 - Frontend: экраны ролей — своё приложение на `/av` (TypeScript + Vue 3 + frappe-ui + vue-router) с одной боковой панелью и меню по ролям; стили изолированы контейнером `.av-desk`. Frappe Desk — back-office: ERPNext, справочники, формы документов, администрирование. React-острова (Excalidraw, React Flow) для схем. Поле — страница монтажника в том же приложении.
 - Data/storage: MariaDB (документированная основа ERPNext), файлы Frappe (public/private), Redis.
 - Collaboration: отдельный Node-сервис Hocuspocus (Yjs), доступ по сессии Frappe.

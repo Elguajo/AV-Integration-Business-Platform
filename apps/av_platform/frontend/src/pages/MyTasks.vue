@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   Button,
   ErrorMessage,
@@ -11,6 +12,7 @@ import {
 } from 'frappe-ui'
 import {
   PM_API,
+  TASK_QUERY,
   type BoardTask,
   type DueBucket,
   type MoveResult,
@@ -18,9 +20,11 @@ import {
   type MyTaskView,
   type MyTasks,
 } from '../pmApi'
+import OverlayScroll from '../components/OverlayScroll.vue'
 import { ruPm } from '../i18n/pm'
 import { date } from '../format'
 import MyTaskRow from '../components/MyTaskRow.vue'
+import TaskPanel from '../components/TaskPanel.vue'
 
 const ANY = '__any__'
 const BUCKETS: DueBucket[] = ['overdue', 'today', 'week', 'later', 'no_date']
@@ -124,10 +128,24 @@ async function moveTask(name: string, stage: string) {
 function resetFilters() {
   Object.assign(filters, { project: ANY, search: '' })
 }
+
+// The open work lives in the address: /av/my-tasks?task=<name> (BRD-2).
+const route = useRoute()
+const router = useRouter()
+const openTask = computed(() => {
+  const value = route.query[TASK_QUERY]
+  return typeof value === 'string' && value ? value : null
+})
+const openCard = computed(() => tasks.value.find((t) => t.name === openTask.value) ?? null)
+
+function closePanel() {
+  const { [TASK_QUERY]: _closed, ...query } = route.query
+  router.push({ query })
+}
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-base text-ink-gray-8">
+  <div class="relative flex h-full flex-col bg-surface-base text-ink-gray-8">
     <div class="flex w-full flex-wrap items-center justify-between gap-2 px-5 pt-3">
       <div class="flex min-w-0 items-baseline gap-3">
         <span v-if="list.data" class="text-sm text-ink-gray-5">
@@ -155,7 +173,7 @@ function resetFilters() {
       </div>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <OverlayScroll class="min-h-0 flex-1">
       <div class="mx-auto max-w-5xl px-4 pb-10 pt-4 sm:px-5">
         <div v-if="list.error" class="mx-auto max-w-xl pt-6">
           <p class="text-lg-semibold text-ink-gray-8">{{ ruPm.my.error }}</p>
@@ -221,7 +239,7 @@ function resetFilters() {
               />
               <h2
                 class="text-base-semibold"
-                :class="group.bucket === 'overdue' ? 'text-ink-red-4' : 'text-ink-gray-8'"
+                :class="group.bucket === 'overdue' ? 'text-ink-red-6' : 'text-ink-gray-8'"
               >
                 {{ group.label }}
               </h2>
@@ -237,12 +255,22 @@ function resetFilters() {
                 :can-move="list.data.can_move"
                 :saving="saving.has(task.name)"
                 :show-assignees="view === 'delegated'"
+                :selected="task.name === openTask"
                 @move="moveTask(task.name, $event)"
               />
             </ul>
           </section>
         </template>
       </div>
-    </div>
+    </OverlayScroll>
+
+    <TaskPanel
+      v-if="openTask"
+      :key="openTask"
+      :name="openTask"
+      :card-modified="openCard?.modified"
+      @close="closePanel"
+      @updated="replaceTask"
+    />
   </div>
 </template>
