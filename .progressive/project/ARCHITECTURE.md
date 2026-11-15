@@ -1,10 +1,10 @@
 # Architecture — AV Integration Business Platform
 
-Решение и обоснование — [ADR-001](../decisions/ADR-001-frappe-typescript-hybrid.md), оболочка — [ADR-004](../decisions/ADR-004-desk-as-product-shell.md); полный стек и правила — [MVP-SPEC §2.3](../../MVP-SPEC.md#23-техническая-основа-и-стек). Здесь — текущее устройство и целевые границы.
+Решение и обоснование — [ADR-001](../decisions/ADR-001-frappe-typescript-hybrid.md), оболочка — [ADR-006](../decisions/ADR-006-own-shell-desk-as-back-office.md) (заменил ADR-004); полный стек и правила — [MVP-SPEC §2.3](../../MVP-SPEC.md#23-техническая-основа-и-стек). Здесь — текущее устройство и целевые границы.
 
 ## Recommended stack
 - Runtime/framework: Frappe v16 + ERPNext v16 (Python) — сервер, DocType, права, бизнес-правила. Своё приложение `apps/av_platform` расширяет ERPNext без правки core: `doc_events`, `extend_doctype_class`, `override_whitelisted_methods`, custom fields/fixtures, свои DocType и патчи.
-- Frontend: Frappe Desk — единственная оболочка продукта (своя панель модулей, меню и страницы приложения). Экраны, которых нет в Desk, — TypeScript + Vue 3 + frappe-ui внутри страниц Desk, стили изолированы контейнером `.av-desk`. React-острова (Excalidraw, React Flow) для схем. Поле — после проверки Desk на телефоне.
+- Frontend: экраны ролей — своё приложение на `/av` (TypeScript + Vue 3 + frappe-ui + vue-router) с одной боковой панелью и меню по ролям; стили изолированы контейнером `.av-desk`. Frappe Desk — back-office: ERPNext, справочники, формы документов, администрирование. React-острова (Excalidraw, React Flow) для схем. Поле — страница монтажника в том же приложении.
 - Data/storage: MariaDB (документированная основа ERPNext), файлы Frappe (public/private), Redis.
 - Collaboration: отдельный Node-сервис Hocuspocus (Yjs), доступ по сессии Frappe.
 - AI ([ADR-005](../decisions/ADR-005-ai-gateway-local-and-external-models.md)): встроенный MCP Frappe (с v16.55) для внешних агентов; ассистент продукта в `av_platform` (Python, фоновые задания, realtime); модели через один шлюз с OpenAI-совместимым API — локальные на офисном GPU-сервере (Ollama → vLLM) и внешние провайдеры.
@@ -15,7 +15,7 @@
 
 ## System shape
 ```text
-[Frappe Desk: оболочка, списки, формы  ⊃  Vue+frappe-ui страницы ролей]   [MCP-клиент ИИ]
+[/av: Vue+frappe-ui рабочие места ролей]  [Frappe Desk: back-office, ERPNext, формы]   [MCP-клиент ИИ]
                           |                                                     /
          +---------- Frappe REST/RPC + permissions + MCP (/api/v2/mcp) ----+
                                    |
@@ -33,7 +33,7 @@ av_platform (ассистент) → шлюз моделей (OpenAI-совме�
 ## Current state (observed in repository)
 - Реализован только срез Sales → PM: DocType `AV Handover`, `commercial.py`, `permissions.py`; зависит от ERPNext (`required_apps = ["erpnext"]`), использует Quotation и Project.
 - Образ `frappe/erpnext:v16.53.0` по digest, MariaDB 11.8.3, Redis 7.4.6; фактическая версия Frappe в образе — 16.55.1. Runtime запущен 12.11.2026 (TP-01: up, seed, 11 Frappe-тестов — PASS; restore, браузер, конкурентность — NOT RUN).
-- Экраны ролей (обзор руководителя, доска предложений, доска работ, «Мои задачи») — Vue 3 + frappe-ui в страницах Desk `av-overview`, `av-quotations`, `av-work-board`, `av-my-tasks`; меню `AV Overview`, `AV Sales` и `AV Projects`, иконки в панели модулей (`av_platform/dock`, `av_platform/av_platform/sidebar`). Бандл собирается Vite в `public/frontend`, путь передаётся при входе (`av_platform/desk.py`).
+- Экраны ролей (главная, все проекты и карточка проекта, доска работ, «Мои задачи», «Мои предложения») — одно приложение на `/av` (`frontend/src/App.vue`, `router.ts`); страница `av_platform/www/av.py` отдаёт его с данными входа, меню и стартовая страница по ролям — `av_platform/shell.py`. Vite собирает бандл в `public/frontend` и шаблон `www/av.html`. Страниц, меню и иконок AV в Desk нет (UI-04).
 - Hocuspocus, MCP, шлюза моделей и ассистента пока нет (ADR-005 — Specified).
 
 ## Sources of truth

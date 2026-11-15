@@ -177,7 +177,7 @@ function onDragStart(event: DragEvent) {
           ref="input"
           v-model="draft"
           maxlength="140"
-          class="w-full rounded-4 border border-outline-gray-3 bg-surface-white px-1.5 py-0.5 text-base-medium text-ink-gray-9 focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
+          class="w-full rounded-4 border border-outline-gray-3 bg-surface-base px-1.5 py-0.5 text-base-medium text-ink-gray-9 focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
           :aria-label="t.renameField"
           :title="t.renameHint"
           @keydown.enter.prevent="finishRename(true)"

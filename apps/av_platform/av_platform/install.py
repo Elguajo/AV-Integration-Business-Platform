@@ -1,7 +1,7 @@
 import frappe
 
 from av_platform import overview, user_admin
-from av_platform.desk import set_default_app
+from av_platform.shell import set_default_app
 from av_platform.pm_board import ensure_setup
 
 

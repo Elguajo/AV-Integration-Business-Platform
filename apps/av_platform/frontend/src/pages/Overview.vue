@@ -4,7 +4,7 @@
 // then the project table. The server decides every value.
 import { computed, ref } from 'vue'
 import { Button, ErrorMessage, Skeleton, useCall } from 'frappe-ui'
-import { OVERVIEW_API, deskUrl, openPage, pageUrl, type Amount, type Overview } from '../overviewApi'
+import { OVERVIEW_API, deskUrl, openShell, shellUrl, type Amount, type Overview } from '../overviewApi'
 import type { DueBucket } from '../pmApi'
 import { ruOverview as t } from '../i18n/overview'
 import { date, money, UNKNOWN } from '../format'
@@ -73,7 +73,7 @@ function amounts(totals: Amount[]) {
               :key="String(option)"
               type="button"
               class="rounded-3 px-3 py-1"
-              :class="mine === option ? 'bg-surface-white font-medium text-ink-gray-9 shadow-sm' : 'text-ink-gray-6'"
+              :class="mine === option ? 'bg-surface-base font-medium text-ink-gray-9 shadow-sm' : 'text-ink-gray-6'"
               :aria-pressed="mine === option"
               @click="mine = option"
             >
@@ -84,11 +84,11 @@ function amounts(totals: Amount[]) {
         </div>
 
         <div class="grid gap-4" :class="data.data.funnel ? 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]' : ''">
-          <section class="rounded-6 border border-outline-gray-2 bg-surface-white p-4" aria-labelledby="av-home-tasks">
+          <section class="rounded-6 border border-outline-gray-2 bg-surface-base p-4" aria-labelledby="av-home-tasks">
             <div class="mb-3 flex items-center gap-2">
               <h2 id="av-home-tasks" class="text-base font-semibold text-ink-gray-9">{{ t.myTasks.title }}</h2>
               <span class="grow" />
-              <a :href="pageUrl('av-my-tasks')" class="text-p-sm text-ink-blue-link hover:underline" @click="openPage($event, 'av-my-tasks')">
+              <a :href="shellUrl('my-tasks')" class="text-p-sm text-ink-blue-link hover:underline" @click="openShell($event, 'my-tasks')">
                 {{ t.myTasks.all }}
               </a>
             </div>
@@ -113,9 +113,9 @@ function amounts(totals: Amount[]) {
                     <p class="text-p-xs text-ink-gray-5">
                       <a
                         v-if="task.project"
-                        :href="pageUrl('av-project', task.project)"
+                        :href="shellUrl('projects', task.project)"
                         class="hover:underline"
-                        @click="openPage($event, 'av-project', task.project)"
+                        @click="openShell($event, 'projects', task.project)"
                       >{{ task.project_name || task.project }}</a>
                       · {{ t.myTasks.buckets[task.bucket] }} · {{ date(task.end) }}
                     </p>
@@ -126,7 +126,7 @@ function amounts(totals: Amount[]) {
             </template>
           </section>
 
-          <section v-if="data.data.funnel" class="rounded-6 border border-outline-gray-2 bg-surface-white p-4" aria-labelledby="av-home-funnel">
+          <section v-if="data.data.funnel" class="rounded-6 border border-outline-gray-2 bg-surface-base p-4" aria-labelledby="av-home-funnel">
             <div class="mb-1 flex flex-wrap items-baseline gap-2">
               <h2 id="av-home-funnel" class="text-base font-semibold text-ink-gray-9">{{ t.funnel.title }}</h2>
               <span class="text-p-xs text-ink-gray-5">{{ t.funnel.hint }}</span>
@@ -159,12 +159,12 @@ function amounts(totals: Amount[]) {
           </section>
         </div>
 
-        <section class="rounded-6 border border-outline-gray-2 bg-surface-white" aria-labelledby="av-home-projects">
+        <section class="rounded-6 border border-outline-gray-2 bg-surface-base" aria-labelledby="av-home-projects">
           <div class="flex flex-wrap items-center gap-2 px-4 pb-2 pt-3">
             <h2 id="av-home-projects" class="text-base font-semibold text-ink-gray-9">{{ t.homeProjects.title }}</h2>
             <span class="text-p-sm text-ink-gray-5">{{ t.homeProjects.count(Math.min(rows.length, HOME_ROWS), rows.length) }}</span>
             <span class="grow" />
-            <a :href="pageUrl('av-projects')" class="text-p-sm text-ink-blue-link hover:underline" @click="openPage($event, 'av-projects')">
+            <a :href="shellUrl('projects')" class="text-p-sm text-ink-blue-link hover:underline" @click="openShell($event, 'projects')">
               {{ t.homeProjects.all }}
             </a>
           </div>

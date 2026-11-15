@@ -3,7 +3,7 @@
 // Only open projects the user may read come from the server; filters work on that list.
 import { computed, ref } from 'vue'
 import { Button, ErrorMessage, Select, Skeleton, useCall } from 'frappe-ui'
-import { OVERVIEW_API, STATUSES, openPage, pageUrl, type ProjectRegister, type ProjectStatus } from '../overviewApi'
+import { OVERVIEW_API, STATUSES, openShell, shellUrl, type ProjectRegister, type ProjectStatus } from '../overviewApi'
 import { ruOverview as t } from '../i18n/overview'
 import { date, money } from '../format'
 import RegisterHeader, { type RegisterView } from '../components/RegisterHeader.vue'
@@ -113,7 +113,7 @@ function toggleStatus(value: ProjectStatus) {
             v-for="s in STATUSES"
             :key="s"
             type="button"
-            class="rounded-6 border bg-surface-white px-3 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-outline-gray-4"
+            class="rounded-6 border bg-surface-base px-3 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-outline-gray-4"
             :class="status === s ? 'border-outline-gray-5' : 'border-outline-gray-2'"
             :aria-pressed="status === s"
             @click="toggleStatus(s)"
@@ -123,14 +123,14 @@ function toggleStatus(value: ProjectStatus) {
           </button>
         </div>
 
-        <p v-if="!allRows.length" class="rounded-6 border border-dashed border-outline-gray-3 bg-surface-white p-8 text-center text-p-base text-ink-gray-6">
+        <p v-if="!allRows.length" class="rounded-6 border border-dashed border-outline-gray-3 bg-surface-base p-8 text-center text-p-base text-ink-gray-6">
           {{ t.register.empty }}
         </p>
-        <p v-else-if="!rows.length" class="rounded-6 border border-dashed border-outline-gray-3 bg-surface-white p-8 text-center text-p-base text-ink-gray-6">
+        <p v-else-if="!rows.length" class="rounded-6 border border-dashed border-outline-gray-3 bg-surface-base p-8 text-center text-p-base text-ink-gray-6">
           {{ t.register.emptyFilter }}
         </p>
 
-        <section v-else-if="view === 'list'" class="rounded-6 border border-outline-gray-2 bg-surface-white">
+        <section v-else-if="view === 'list'" class="rounded-6 border border-outline-gray-2 bg-surface-base">
           <ProjectTable :rows="rows" :money-visible="data.data.money_visible" />
         </section>
 
@@ -142,9 +142,9 @@ function toggleStatus(value: ProjectStatus) {
             <a
               v-for="row in rows.filter((r) => r.status === s)"
               :key="row.name"
-              :href="pageUrl('av-project', row.name)"
-              class="flex flex-col gap-1.5 rounded-6 border border-outline-gray-2 bg-surface-white p-3 hover:border-outline-gray-4"
-              @click="openPage($event, 'av-project', row.name)"
+              :href="shellUrl('projects', row.name)"
+              class="flex flex-col gap-1.5 rounded-6 border border-outline-gray-2 bg-surface-base p-3 hover:border-outline-gray-4"
+              @click="openShell($event, 'projects', row.name)"
             >
               <span class="flex items-start gap-2">
                 <span class="grow font-medium text-ink-gray-9">{{ row.project_name || row.name }}</span>

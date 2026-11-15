@@ -1,4 +1,4 @@
-from av_platform.desk import set_default_app
+from av_platform.shell import set_default_app
 
 
 def execute():

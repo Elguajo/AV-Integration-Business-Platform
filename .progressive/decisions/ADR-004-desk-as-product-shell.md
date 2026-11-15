@@ -1,6 +1,6 @@
 # ADR-004 — Desk как основное окно продукта
 
-Status: Accepted
+Status: Superseded by ADR-006 (15.11.2026)
 Date: 2026-11-14
 Supersedes: интерфейсную часть ADR-001 («интерфейсы ролей — отдельный фронтенд Vue + frappe-ui, PWA»)
 

@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Button, ErrorMessage, ScrollArea, Skeleton, useCall } from 'frappe-ui'
 import { API, type QuotationRow, type Stage, type Workspace } from '../api'
 import { ru } from '../i18n/ru'
 import QuotationCard from '../components/QuotationCard.vue'
 import QuotationPanel from '../components/QuotationPanel.vue'
 
+// The open quotation lives in the address: /av/sales/<quotation>.
 const props = defineProps<{ quotation?: string }>()
-// Desk owns the URL (/desk/av-sales/<quotation>); the host turns this into a route change.
-const emit = defineEmits<{ navigate: [quotation?: string] }>()
+const router = useRouter()
 
 const workspace = useCall<Workspace>({ url: API.workspace })
 
@@ -32,11 +33,11 @@ const forbidden = computed(() => (workspace.error as { type?: string } | null)?.
 const isEmpty = computed(() => workspace.data && workspace.data.quotations.length === 0)
 
 function open(name: string) {
-  emit('navigate', name)
+  router.push(`/sales/${encodeURIComponent(name)}`)
 }
 
 function close() {
-  emit('navigate')
+  router.push('/sales')
 }
 
 function onChanged() {

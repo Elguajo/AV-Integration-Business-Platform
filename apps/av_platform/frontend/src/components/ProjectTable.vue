@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Dense table of projects (UI-03, OVW-01): one row per project, the whole row opens the card.
-import { type ProjectRow, openPage, pageUrl } from '../overviewApi'
+import { type ProjectRow, openShell, shellUrl } from '../overviewApi'
 import { ruOverview as t } from '../i18n/overview'
 import { date, money } from '../format'
 import StatusPill from './StatusPill.vue'
@@ -43,13 +43,13 @@ function obstacleOwner(row: ProjectRow) {
           v-for="row in rows"
           :key="row.name"
           class="cursor-pointer border-b border-outline-gray-1 align-middle hover:bg-surface-gray-1"
-          @click="openPage($event, 'av-project', row.name)"
+          @click="openShell($event, 'projects', row.name)"
         >
           <td class="px-3 py-2">
             <a
-              :href="pageUrl('av-project', row.name)"
+              :href="shellUrl('projects', row.name)"
               class="font-medium text-ink-gray-9 hover:underline"
-              @click.stop="openPage($event, 'av-project', row.name)"
+              @click.stop="openShell($event, 'projects', row.name)"
             >
               {{ row.project_name || row.name }}
             </a>

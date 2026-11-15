@@ -1,4 +1,4 @@
-"""Read model and actions for the project work board (Desk page av-work-board, PM-01).
+"""Read model and actions for the project work board (shell screen /av/board, PM-01).
 
 The board only displays data and asks the server to move a card. Every decision is taken
 here or by the ERPNext Task controller. Rejections are returned as stable codes; the

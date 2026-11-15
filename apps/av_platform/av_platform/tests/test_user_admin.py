@@ -5,7 +5,7 @@ import frappe.client
 from frappe.core.doctype.user.user import change_password
 from frappe.tests import IntegrationTestCase
 
-from av_platform.desk import has_app_permission, home_page
+from av_platform.shell import has_app_permission, home_page
 from av_platform.user_admin import ADMIN_ROLE, MODERATOR_ROLE, SYSTEM_MANAGER, ensure_setup
 
 

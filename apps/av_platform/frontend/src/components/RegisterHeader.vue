@@ -55,7 +55,7 @@ const mine = defineModel<boolean>('mine', { required: true })
         <button
           type="button"
           class="rounded-3 px-3 py-1"
-          :class="!mine ? 'bg-surface-white font-medium text-ink-gray-9 shadow-sm' : 'text-ink-gray-6'"
+          :class="!mine ? 'bg-surface-base font-medium text-ink-gray-9 shadow-sm' : 'text-ink-gray-6'"
           :aria-pressed="!mine"
           @click="mine = false"
         >
@@ -64,7 +64,7 @@ const mine = defineModel<boolean>('mine', { required: true })
         <button
           type="button"
           class="rounded-3 px-3 py-1"
-          :class="mine ? 'bg-surface-white font-medium text-ink-gray-9 shadow-sm' : 'text-ink-gray-6'"
+          :class="mine ? 'bg-surface-base font-medium text-ink-gray-9 shadow-sm' : 'text-ink-gray-6'"
           :aria-pressed="mine"
           @click="mine = true"
         >

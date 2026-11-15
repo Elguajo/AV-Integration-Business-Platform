@@ -82,7 +82,6 @@ export const ruOverview = {
       details: 'Сведения',
       files: 'Файлы',
     },
-    view: 'Вид',
     wholeProject: 'Весь проект',
     stages: 'Этапы работ',
     noStage: 'Без этапа',

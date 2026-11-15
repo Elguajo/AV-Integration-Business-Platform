@@ -83,7 +83,7 @@ def _has_role(roles, user=None):
 
 
 def can_view(user=None):
-    """Home page (av-overview)."""
+    """Home page of the shell (/av/home)."""
     return _has_role(HOME_ROLES, user)
 
 

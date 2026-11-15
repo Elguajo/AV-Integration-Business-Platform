@@ -1,4 +1,4 @@
-"""Read models and actions for the Sales workspace (Desk page av-quotations).
+"""Read models and actions for the Sales workspace (shell screen /av/sales).
 
 The workspace only displays data and calls Frappe. Every decision (permissions, states,
 whether a handover is allowed) is taken here or in the AV Handover controller.

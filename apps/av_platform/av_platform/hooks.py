@@ -13,28 +13,18 @@ after_migrate = [
     "av_platform.user_admin.ensure_setup",
 ]
 
-# Desk is the product shell (ADR-004): the app has its own rail (dock/), sidebars and Desk
-# pages; the role screens are Vue apps mounted in those pages (av_platform/desk.py).
+# The role screens are one Vue app on /av (ADR-006, av_platform/shell.py); Desk is the back office.
 add_to_apps_screen = [
     {
         "name": app_name,
         "title": "AV Platform",
-        # /av sends each user to the start page of their role (www/av.py).
         "route": "/av",
-        "has_permission": "av_platform.desk.has_app_permission",
+        "has_permission": "av_platform.shell.has_app_permission",
     }
 ]
-boot_session = "av_platform.desk.boot_session"
-# Start page after login, by role (av_platform.desk.LANDING).
-get_website_user_home_page = "av_platform.desk.home_page"
-
-# The role screens used to be a separate site page under /av; old links land in Desk.
-# 302 keeps the rule reversible: browsers do not cache it.
-website_redirects = [
-    {"source": r"/av/sales(/.*)?", "target": r"/desk/av-quotations\1", "redirect_http_status": 302},
-    {"source": r"/av/board", "target": "/desk/av-work-board", "redirect_http_status": 302},
-    {"source": r"/av/my-tasks", "target": "/desk/av-my-tasks", "redirect_http_status": 302},
-]
+website_route_rules = [{"from_route": "/av/<path:app_path>", "to_route": "av"}]
+# Start page after login, by role (av_platform.shell.LANDING).
+get_website_user_home_page = "av_platform.shell.home_page"
 
 doc_events = {
     "Task": {"before_validate": "av_platform.pm_board.sync_task_stage"},

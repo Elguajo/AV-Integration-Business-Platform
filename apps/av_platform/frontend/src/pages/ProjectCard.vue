@@ -1,13 +1,14 @@
 <script setup lang="ts">
-// Project card (UI-03): record header, rail of sections, tree of work stages, side panel.
+// Project card (UI-03, UI-04): record header, rail of sections, main area and side panel.
+// Works are filtered by stage with a row of chips; the grouping tree returns with rooms and systems.
 // Sections of modules that do not exist yet are not shown; directions without data say so.
 import { computed, ref, watch } from 'vue'
 import { Button, ErrorMessage, Skeleton, useCall } from 'frappe-ui'
 import {
   OVERVIEW_API,
   deskUrl,
-  openPage,
-  pageUrl,
+  openShell,
+  shellUrl,
   type ProjectCardData,
   type Work,
 } from '../overviewApi'
@@ -67,11 +68,6 @@ const sections = computed<RecordSection[]>(() => [
 const blockedCount = computed(() => (card.value?.obstacles ?? []).filter((o) => o.kind === 'blocked').length)
 const overdueCount = computed(() => (card.value?.obstacles ?? []).filter((o) => o.kind === 'overdue').length)
 
-function pickStage(key: string | null) {
-  stage.value = key
-  section.value = 'works'
-}
-
 function people(work: Work) {
   return work.assignees.length ? work.assignees.map((a) => a.full_name || a.name).join(', ') : t.card.nobody
 }
@@ -94,7 +90,7 @@ function workStatus(work: Work) {
         <p class="text-lg-semibold text-ink-gray-8">{{ t.card.error }}</p>
         <p v-if="forbidden" class="mt-2 text-p-base text-ink-gray-6">{{ t.card.forbidden }}</p>
         <ErrorMessage v-else class="mt-2" :message="data.error" />
-        <a :href="pageUrl('av-projects')" class="mt-4 inline-block text-p-sm text-ink-blue-link hover:underline" @click="openPage($event, 'av-projects')">
+        <a :href="shellUrl('projects')" class="mt-4 inline-block text-p-sm text-ink-blue-link hover:underline" @click="openShell($event, 'projects')">
           {{ t.card.back }}
         </a>
       </div>
@@ -107,11 +103,11 @@ function workStatus(work: Work) {
       <RecordShell v-else-if="p" v-model:active="section" :sections="sections" :sections-label="t.card.sectionsLabel">
         <template #header>
           <a
-            :href="pageUrl('av-projects')"
+            :href="shellUrl('projects')"
             class="inline-grid size-8 place-items-center rounded-4 border border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-2"
             :aria-label="t.card.back"
             :title="t.card.back"
-            @click="openPage($event, 'av-projects')"
+            @click="openShell($event, 'projects')"
           >
             <span class="lucide-arrow-left size-4" aria-hidden="true" />
           </a>
@@ -130,29 +126,6 @@ function workStatus(work: Work) {
             {{ t.table.basis }}: {{ p.basis ? money(p.basis.amount, p.basis.currency) : t.noData }}
           </span>
           <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
-        </template>
-
-        <template #tree>
-          <p class="mb-2 px-2 text-[11px] uppercase tracking-wider text-ink-gray-5">{{ t.card.view }}</p>
-          <button
-            type="button"
-            class="flex w-full justify-between rounded-3 px-2 py-1 text-left text-p-sm"
-            :class="!stage ? 'bg-surface-blue-2 text-ink-blue-6' : 'text-ink-gray-7 hover:bg-surface-gray-2'"
-            @click="pickStage(null)"
-          >
-            <span>{{ t.card.wholeProject }}</span><span class="tabular-nums">{{ card.works.length }}</span>
-          </button>
-          <p class="mb-1 mt-3 px-2 text-p-sm font-medium text-ink-gray-8">{{ t.card.stages }}</p>
-          <button
-            v-for="row in stageRows"
-            :key="row.key"
-            type="button"
-            class="flex w-full justify-between rounded-3 px-2 py-1 text-left text-p-sm"
-            :class="stage === row.key ? 'bg-surface-blue-2 text-ink-blue-6' : 'text-ink-gray-6 hover:bg-surface-gray-2'"
-            @click="pickStage(row.key)"
-          >
-            <span>{{ row.label }}</span><span class="tabular-nums">{{ stageCounts.get(row.key) ?? 0 }}</span>
-          </button>
         </template>
 
         <!-- Overview -->
@@ -244,9 +217,22 @@ function workStatus(work: Work) {
               {{ t.card.sections.works }}<template v-if="stage"> · {{ stage === NO_STAGE ? t.card.noStage : stageLabel.get(stage) }}</template>
             </h2>
             <span class="grow" />
-            <a :href="pageUrl('av-work-board')" @click="openPage($event, 'av-work-board')">
+            <a :href="shellUrl('board')" @click="openShell($event, 'board')">
               <Button icon-left="lucide-square-kanban" :label="t.card.openBoard" />
             </a>
+          </div>
+          <div v-if="card.works.length" class="flex flex-wrap gap-1.5" role="group" :aria-label="t.card.stages">
+            <button
+              v-for="row in [{ key: null, label: t.card.wholeProject }, ...stageRows]"
+              :key="row.key ?? 'all'"
+              type="button"
+              class="rounded-full border px-2.5 py-0.5 text-p-sm"
+              :class="stage === row.key ? 'border-outline-blue-1 bg-surface-blue-2 text-ink-blue-6' : 'border-outline-gray-2 text-ink-gray-7 hover:bg-surface-gray-2'"
+              :aria-pressed="stage === row.key"
+              @click="stage = row.key"
+            >
+              {{ row.label }} <span class="tabular-nums text-ink-gray-5">{{ row.key ? (stageCounts.get(row.key) ?? 0) : card.works.length }}</span>
+            </button>
           </div>
           <p v-if="!card.works.length" class="rounded-6 border border-dashed border-outline-gray-3 p-6 text-center text-p-sm text-ink-gray-6">{{ t.card.noWorks }}</p>
           <div v-else class="overflow-x-auto rounded-6 border border-outline-gray-2">

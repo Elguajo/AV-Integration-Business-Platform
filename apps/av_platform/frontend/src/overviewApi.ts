@@ -1,6 +1,7 @@
 // Shapes returned by av_platform.overview: home page (DIR-01, UI-03), project register and
 // project card (UI-03). The server decides every stage, status and reason; the client only renders them.
 import type { DueBucket, DueState, Person } from './pmApi'
+import { router } from './router'
 
 export type FunnelStage = 'draft' | 'issued' | 'handover' | 'returned' | 'accepted'
 export type DealAlert = 'expired' | 'expiring'
@@ -146,15 +147,20 @@ export function deskUrl(doctype: string, name: string) {
   return `/desk/${doctype.toLowerCase().replace(/ /g, '-')}/${encodeURIComponent(name)}`
 }
 
-export function pageUrl(page: string, ...args: string[]) {
-  return ['/desk', page, ...args.map(encodeURIComponent)].join('/')
+/** Address of a shell screen, e.g. shellUrl('projects', name) → /av/projects/<name>. */
+export function shellUrl(...parts: string[]) {
+  return router.resolve(shellPath(parts)).href
 }
 
-/** Opens a Desk page inside the running Desk (no reload); a modified click keeps the browser default. */
-export function openPage(event: MouseEvent | KeyboardEvent, page: string, ...args: string[]) {
+/** Opens a shell screen without a reload; a modified click keeps the browser default. */
+export function openShell(event: MouseEvent | KeyboardEvent, ...parts: string[]) {
   if (event instanceof MouseEvent && (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0)) {
     return
   }
   event.preventDefault()
-  window.frappe.set_route(page, ...args)
+  router.push(shellPath(parts))
+}
+
+function shellPath(parts: string[]) {
+  return '/' + parts.map(encodeURIComponent).join('/')
 }
