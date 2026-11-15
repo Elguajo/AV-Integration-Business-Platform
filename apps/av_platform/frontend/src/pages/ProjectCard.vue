@@ -20,13 +20,12 @@ import OverlayScroll from '../components/OverlayScroll.vue'
 import StatusPill from '../components/StatusPill.vue'
 import PeopleStack from '../components/PeopleStack.vue'
 import TaskPanel from '../components/TaskPanel.vue'
+import ProjectDashboard from '../components/ProjectDashboard.vue'
 import { TASK_QUERY } from '../pmApi'
 
 const props = defineProps<{ project?: string }>()
 
 const NO_STAGE = '__none__'
-// Directions that have no data in the card yet; they are listed in one line, never as zero.
-const UNTRACKED = ['procurement', 'install', 'tests', 'money'] as const
 const data = useCall<ProjectCardData, { project: string }>({
   url: OVERVIEW_API.project,
   params: () => ({ project: props.project ?? '' }),
@@ -88,8 +87,12 @@ const sections = computed<RecordSection[]>(() => [
   { key: 'details', label: t.card.sections.details, icon: 'lucide-info' },
   { key: 'files', label: t.card.sections.files, icon: 'lucide-paperclip', count: card.value?.files.length },
 ])
-const blockedCount = computed(() => (card.value?.obstacles ?? []).filter((o) => o.kind === 'blocked').length)
-const overdueCount = computed(() => (card.value?.obstacles ?? []).filter((o) => o.kind === 'overdue').length)
+
+// A dashboard tile opens a section; the stage legend opens the works of that stage.
+function openSection(key: string, stageKey?: string | null) {
+  stage.value = key === 'works' ? (stageKey ?? null) : stage.value
+  section.value = key
+}
 
 function people(work: Work) {
   return work.assignees.length ? work.assignees.map((a) => a.full_name || a.name).join(', ') : t.card.nobody
@@ -162,82 +165,8 @@ function workStatus(work: Work) {
         <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
       </template>
 
-      <!-- Overview -->
-      <template v-if="section === 'overview'">
-        <p class="text-p-sm text-ink-gray-6">{{ t.card.statusScope }}</p>
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2">
-          <div class="rounded-4 border border-outline-gray-2 bg-surface-gray-1 px-3 py-2">
-            <span class="text-p-xs text-ink-gray-6">{{ t.directions.works }}</span>
-            <span class="block text-lg font-semibold tabular-nums text-ink-gray-9">
-              {{ p.works.total ? t.card.worksDone(p.works.done, p.works.total) : t.noData }}
-            </span>
-            <span v-if="blockedCount || overdueCount" class="text-p-xs text-ink-red-6">
-              {{ t.card.blocked }}: {{ blockedCount }} · {{ t.card.overdue }}: {{ overdueCount }}
-            </span>
-          </div>
-        </div>
-        <!-- Directions without a registry yet: one muted line. A direction that gets data leaves UNTRACKED and gets a tile above. -->
-        <p class="text-p-sm text-ink-gray-5">{{ t.card.untracked(UNTRACKED.map((key) => t.directions[key])) }}</p>
-
-        <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
-          <section class="rounded-6 border border-outline-gray-2 p-3">
-            <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.basis }}</h2>
-            <template v-if="!card.money_visible">
-              <p class="text-p-sm text-ink-gray-5">{{ t.hidden }}</p>
-            </template>
-            <template v-else-if="p.basis">
-              <p class="text-2xl font-semibold tabular-nums text-ink-gray-9">{{ money(p.basis.amount, p.basis.currency) }}</p>
-              <p class="mt-1 text-p-sm text-ink-gray-6">
-                <a :href="deskUrl('Quotation', p.basis.quotation)" class="hover:underline">{{ t.card.basisFrom(p.basis.quotation) }}</a>
-                <template v-if="p.handover?.reviewed_on"> · {{ t.card.acceptedOn }} {{ date(p.handover.reviewed_on) }}</template>
-              </p>
-            </template>
-            <p v-else class="text-p-sm text-ink-gray-5">{{ t.card.noBasis }}</p>
-          </section>
-
-          <section class="rounded-6 border border-outline-gray-2 p-3">
-            <h2 class="mb-2 flex items-center gap-2 text-p-base font-semibold text-ink-gray-9">
-              {{ t.card.obstacles }}
-              <span v-if="card.obstacles.length" class="rounded-3 bg-surface-red-2 px-1.5 text-p-xs text-ink-red-6">{{ card.obstacles.length }}</span>
-            </h2>
-            <p v-if="!card.obstacles.length" class="text-p-sm text-ink-gray-5">{{ t.card.noObstacles }}</p>
-            <ul v-else class="divide-y divide-outline-gray-1">
-              <li v-for="work in card.obstacles.slice(0, 6)" :key="work.name" class="flex gap-2 py-1.5">
-                <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="work.kind === 'blocked' ? 'bg-surface-red-5' : 'bg-surface-amber-5'" aria-hidden="true" />
-                <div class="min-w-0 text-p-sm">
-                  <RouterLink :to="taskLink(work.name)" class="font-medium text-ink-gray-8 hover:underline">{{ work.subject }}</RouterLink>
-                  <p v-if="work.block_reason" class="text-ink-amber-7">{{ work.block_reason }}</p>
-                  <p class="text-p-xs text-ink-gray-5">
-                    {{ work.kind === 'blocked' ? t.card.blocked : t.card.overdue }} · {{ people(work) }} ·
-                    <span :class="dueClass(work)">{{ t.card.due }} {{ date(work.end) }}</span>
-                  </p>
-                </div>
-              </li>
-            </ul>
-          </section>
-        </div>
-
-        <section class="rounded-6 border border-outline-gray-2 p-3">
-          <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.reasons }}</h2>
-          <ul class="flex flex-wrap gap-1.5">
-            <li v-for="reason in p.reasons" :key="reason.code" class="rounded-3 bg-surface-gray-2 px-2 py-0.5 text-p-xs text-ink-gray-7">
-              {{ t.reasons[reason.code](reason.count) }}
-            </li>
-            <li v-if="p.status === 'on_plan'" class="text-p-xs text-ink-gray-5">{{ t.card.onPlan }}</li>
-          </ul>
-        </section>
-
-        <section class="rounded-6 border border-outline-gray-2 p-3">
-          <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.milestones }}</h2>
-          <p v-if="!card.milestones.length" class="text-p-sm text-ink-gray-5">{{ t.card.noMilestones }}</p>
-          <ul v-else class="divide-y divide-outline-gray-1">
-            <li v-for="work in card.milestones" :key="work.name" class="flex flex-wrap items-baseline justify-between gap-2 py-1.5 text-p-sm">
-              <RouterLink :to="taskLink(work.name)" class="text-ink-gray-8 hover:underline">{{ work.subject }}</RouterLink>
-              <span :class="dueClass(work)">{{ date(work.end) }}</span>
-            </li>
-          </ul>
-        </section>
-      </template>
+      <!-- Overview: the project dashboard (UI-06) -->
+      <ProjectDashboard v-if="section === 'overview'" :card="card" :task-link="taskLink" @open="openSection" />
 
       <!-- Works -->
       <template v-else-if="section === 'works'">
@@ -336,7 +265,7 @@ function workStatus(work: Work) {
         </ul>
       </template>
 
-      <template #aside>
+      <template v-if="section !== 'overview'" #aside>
         <section>
           <h2 class="mb-1.5 text-p-sm font-semibold text-ink-gray-9">{{ t.card.myWorks }}</h2>
           <p v-if="!card.my_works.length" class="text-ink-gray-5">{{ t.card.noMyWorks }}</p>

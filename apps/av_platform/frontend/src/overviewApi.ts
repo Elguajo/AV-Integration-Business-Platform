@@ -152,7 +152,18 @@ export interface ProjectCardData {
   milestones: Work[]
   my_works: Work[]
   files: { name: string; file_name: string | null; file_url: string; is_private: boolean; creation: string }[]
+  dashboard: ProjectDashboard
   money_visible: boolean
+}
+
+/** Dashboard of one project (UI-06): counts over every work, never an overall percentage (OVW-02). */
+export interface ProjectDashboard {
+  by_stage: { stage: string | null; count: number }[]
+  milestones: { done: number; total: number }
+  key_dates: Work[]
+  key_dates_truncated: boolean
+  undated_milestones: number
+  people: (Person & { open: number; member: boolean })[]
 }
 
 export const OVERVIEW_API = {

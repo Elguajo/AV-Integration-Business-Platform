@@ -48,11 +48,12 @@ const active = defineModel<string>('active', { required: true })
       <header class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-outline-gray-2 px-4 py-3 sm:px-5">
         <slot name="header" />
       </header>
-      <div class="grid flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <!-- The side panel is optional: a section without it (the dashboard) takes the full width. -->
+      <div class="grid flex-1 grid-cols-1" :class="$slots.aside ? 'xl:grid-cols-[minmax(0,1fr)_280px]' : ''">
         <main class="min-w-0 space-y-4 p-4 sm:p-5">
           <slot />
         </main>
-        <aside class="space-y-5 border-t border-outline-gray-2 bg-surface-gray-1 p-4 text-p-sm xl:border-l xl:border-t-0">
+        <aside v-if="$slots.aside" class="space-y-5 border-t border-outline-gray-2 bg-surface-gray-1 p-4 text-p-sm xl:border-l xl:border-t-0">
           <slot name="aside" />
         </aside>
       </div>

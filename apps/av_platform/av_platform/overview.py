@@ -35,6 +35,7 @@ DECISIONS_SHOWN = 5
 REVIEW_ROLE = "AV Project Manager"
 CARD_TASK_LIMIT = 500
 CARD_LIST_LIMIT = 50
+KEY_DATES_SHOWN = 20
 EXPIRING_DAYS = 30
 MILESTONE_SOON_DAYS = 7
 CLOSED = ("Completed", "Cancelled")
@@ -463,6 +464,39 @@ def _work(task, people, current_day):
     }
 
 
+def _dashboard(works, team, people, current_day):
+    """Project dashboard summary (UI-06): computed from every work, never from the display list.
+
+    Counts only, no overall percentage (OVW-02): works by stage, milestones passed, open works per
+    person. A person is a project member or anyone holding an open work of the project.
+    """
+    open_works = [t for t in works if t.status not in CLOSED]
+    stage_order = {s.name: i for i, s in enumerate(enabled_stages())}
+    by_stage = {}
+    for task in works:
+        by_stage[task.av_stage or None] = by_stage.get(task.av_stage or None, 0) + 1
+    milestones = [t for t in works if t.is_milestone]
+    key_dates = sorted((t for t in milestones if _end(t)), key=_end)
+
+    load = {user: 0 for user in team}
+    for task in open_works:
+        for user in _assignees(task):
+            load[user] = load.get(user, 0) + 1
+    unknown = [u for u in load if u not in people]
+    people = {**people, **_user_names(unknown)} if unknown else people
+    return {
+        "by_stage": [{"stage": stage, "count": count} for stage, count in
+                     sorted(by_stage.items(), key=lambda item: stage_order.get(item[0], len(stage_order)))],
+        "milestones": {"done": sum(1 for t in milestones if t.status == "Completed"),
+                       "total": len(milestones)},
+        "key_dates": [_work(t, people, current_day) for t in key_dates[:KEY_DATES_SHOWN]],
+        "key_dates_truncated": len(key_dates) > KEY_DATES_SHOWN,
+        "undated_milestones": sum(1 for t in milestones if not _end(t)),
+        "people": [{**_person(user, people), "open": count, "member": user in team}
+                   for user, count in sorted(load.items(), key=lambda item: (-item[1], item[0]))],
+    }
+
+
 @frappe.whitelist(methods=["GET"])
 def get_project(project: str):
     """Card of one project (UI-03): header, every obstacle, works by stage, milestones, files."""
@@ -500,6 +534,7 @@ def get_project(project: str):
                        "kind": "blocked" if t.av_block_reason else "overdue"} for t in obstacles],
         "milestones": [_work(t, people, current_day) for t in milestones[:5]],
         "my_works": [_work(t, people, current_day) for t in mine[:CARD_LIST_LIMIT]],
+        "dashboard": _dashboard(works, _teams([doc.name]).get(doc.name, []), people, current_day),
         "files": [{"name": f.name, "file_name": f.file_name, "file_url": f.file_url,
                    "is_private": bool(f.is_private), "creation": str(f.creation)} for f in files],
         "money_visible": money_visible(),

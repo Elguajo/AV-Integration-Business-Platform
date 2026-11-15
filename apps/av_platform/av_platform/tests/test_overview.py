@@ -270,6 +270,32 @@ class TestOverviewAPI(IntegrationTestCase):
         for field in ("works", "status", "reasons", "obstacle", "next_milestone"):
             self.assertEqual(card["project"][field], row[field], field)
 
+    def test_project_dashboard_counts_every_work_stage_milestone_and_person(self):
+        pm = self.demo["pm_user"]
+        idle = self.INSTALLER
+        now = getdate(today())
+        project = self._project("Card dashboard", users=[pm, idle])
+        later = self._task(project, "Commissioning", assignee=pm, is_milestone=1,
+                           exp_end_date=add_days(now, 30))
+        passed = self._task(project, "Site survey", assignee=pm, is_milestone=1,
+                            exp_end_date=add_days(now, -10))
+        frappe.db.set_value("Task", passed, "status", "Completed")
+        self._task(project, "Undated milestone", is_milestone=1)
+        self._task(project, "Rack wiring", assignee=self.DIRECTOR, exp_end_date=add_days(now, 4))
+        self._task(project, "Group", is_group=1)
+        frappe.set_user(pm)
+        with patch("av_platform.overview.CARD_TASK_LIMIT", 1):
+            board = get_project(project)["dashboard"]
+        stages = frappe.get_all("Task", filters={"project": project, "is_group": 0}, pluck="av_stage")
+        self.assertEqual(sum(row["count"] for row in board["by_stage"]), 4)
+        self.assertEqual({row["stage"] for row in board["by_stage"]}, {s or None for s in stages})
+        self.assertEqual(board["milestones"], {"done": 1, "total": 3})
+        self.assertEqual([d["name"] for d in board["key_dates"]], [passed, later])
+        self.assertEqual(board["undated_milestones"], 1)
+        load = {p["name"]: (p["open"], p["member"]) for p in board["people"]}
+        # The completed milestone no longer loads the PM; a holder of an open work counts as a person.
+        self.assertEqual(load, {pm: (1, True), self.DIRECTOR: (1, False), idle: (0, True)})
+
     def test_project_card_groups_do_not_use_the_works_display_limit(self):
         pm = self.demo["pm_user"]
         now = getdate(today())
