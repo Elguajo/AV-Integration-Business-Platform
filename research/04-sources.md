@@ -409,7 +409,7 @@ DT5–DT11 добавлены 15.11.2026 для разбора композиц�
 | PO на несколько проектов с распределением строк; частичная поставка; обратные движения; кабель в метрах против бухт | ALREADY_COVERED | SUP-02–SUP-06, S03, S11 |
 | Свои сущности склада и закупки (`StockLedgerEntry`, `PurchaseOrder`, `Receipt`…) | REJECTED | Закупка и склад — штатный ERPNext (U9, ADR-001); второй складской журнал запрещён (AGENTS.md п. 4) |
 | Мультиарендный SaaS с `tenant_id` как фундамент P0 | MODIFIED | ARC-01: изоляция заложена в модель, но V1 работает для одной компании; способ изоляции — Q9 |
-| BOM-редактор и составление предложений — центр продукта | NEEDS_DECISION | Противоречит позиционированию MVP-SPEC §2.2: не соревноваться с D-Tools в предложениях, принимать их BOM (ARC-04). Менять позиционирование может только пользователь |
+| BOM-редактор и составление предложений — центр продукта | NEEDS_DECISION | Противоречит позиционированию MVP-SPEC §2.2: не соревноваться с D-Tools в предложениях, принимать их BOM (ARC-04). Менять позиционирование может только пользователь. 15.11.2026 позиционирование заменено U14 (§20): ядро — порядок в работе; глубина в КП по-прежнему не решена |
 | Создание проекта напрямую, без выигранной сделки | REJECTED | Решение пользователя 15.11.2026 на вопрос «разрешать ли создание проекта напрямую, без сделки Sales?» — вариант «Нет — проект появляется только из передачи Sales → PM». Как у D-Tools (DT1) и S01. По решению пользователя «Да, закрыть» запрет сделан на сервере (PRJ-01, prototype/README.md) |
 | Группировка строк по помещению, системе и фазе без дублей (AC-03) | ALREADY_COVERED | MVP-SPEC §5: Location и AV System; устройство в нескольких системах — одна единица |
 | Одновременная правка BOM двумя людьми (AC-14) | PROPOSED (H) | TP-03 проверял передачу и доску, не правку спецификации. Добавить проверку при реализации BOM |
@@ -434,3 +434,27 @@ DT5–DT11 добавлены 15.11.2026 для разбора композиц�
 | `frappe/model/document.py` | `before_validate` выполняется до `validate` контроллера и до сохранения паролей; дочерняя строка через `frappe.client.insert`/`delete` сохраняется через родителя | Проверка в `User.before_validate` закрывает форму, REST и дочерние строки одним местом |
 
 Реализация и проверки — prototype/README.md, раздел ADM-01; строки «Администратор» и «Модератор» — MVP-SPEC §3.
+
+## 20. Исходная идея, конкуренция и стадии проекта, 15 ноября 2026
+
+Слова пользователя 15.11.2026, по порядку: вопрос «Какие боли и проблемы очень часто возникают в компаниях AV интеграторов?»; на вопрос, что из этого решает продукт, и упоминание позиционирования MVP-SPEC §2.2 — «Но я хочу с ними конкурировать»; затем «Изначальная идея это сортировка проектов, чтобы видеть статус и урать хаос в работе между Sales, Presales и монтажерами»; на предложенный список стадий — «Да, за основу». Это U14 (MVP-SPEC §1); стадии — MVP-SPEC §4.1.
+
+Источники ответа о болях интеграторов. Многие статьи написаны продавцами ПО, а опросы частично 2013–2019 годов, поэтому это ориентиры, не измерения:
+
+| ID | Источник | Что взято | Оговорка |
+|---|---|---|---|
+| PN1 | [AVIXA: прогноз отрасли (AV Network)](https://avnetwork.com/news/avixa-remains-positive-on-industry-forecast), [Installation International](https://www.installation-international.com/business/ise/pro-av-predictions-for-2025-avixa-takes-the-markets-temperature) | Кадры — главное ограничение 2025 года; затем цены на оборудование и экономика | Пересказ отчёта AVIXA, сам отчёт не открывался |
+| PN2 | [Top Integrators 2024: Biggest Challenges](https://www.avnetwork.com/news/top-integrators-2024-biggest-challenges), [Hiring Issues](https://www.avnetwork.com/news/top-integrators-2024-hiring-issues), [Commercial Integrator: State of the Industry](https://www.commercialintegrator.com/tag/State-of-the-industry/) | Рост без внутренних систем; дефицит технических кадров; кадры — главная проблема для 25% опрошенных CI 2025 | Страница CI вернула 403; цифра из выдачи поиска |
+| PN3 | [Zigaflow: где интеграторы теряют маржу](https://zigaflow.com/insights/where-av-system-integrators-lose-margin), [изменения на объекте без счёта](https://zigaflow.com/insights/av-integrators-site-changes-not-billed), [проект сдан, но в убытке](https://zigaflow.com/insights/av-project-delivered-invoiced-still-losing-money) | Маржа на оборудовании до 6%; перерасход программирования; устные изменения без CO; задержка финального счёта из-за пусконаладки | Продавец ПО; примеры иллюстративные |
+| PN4 | [AV Network: ошибки управления проектами](https://www.avnetwork.com/avnetwork/how-to-avoid-pitfalls-in-project-management), [Solutions360: старт проекта](https://www.solutions360.com/project-kickoff-issues-for-integrators), [D-Tools: 5 проблем](https://d-tools.com/resource-center/5-biggest-challenges-av-integrators-face-and-how-to-solve-them) | Sales закладывает список оборудования вместо объёма; требования теряются при передаче монтажу | D-Tools и Solutions360 — продавцы ПО |
+| PN5 | [AV Network: managed services](https://www.avnetwork.com/news/making-the-case-for-managed-services), [CE Pro: гарантия на систему](https://www.cepro.com/news/surebright-explains-how-whole-system-warranties-fit-the-custom-integration-model/628208/), [IPVM](https://ipvm.com/updates/2244) | Регулярный доход редок; работа после гарантии ложится на интегратора; изменения плохо документируются | IPVM 2013, слова одного руководителя |
+
+Конкуренты (выдача поиска 15.11.2026; цены у разных источников расходятся, официально проверена только страница D-Tools):
+
+| ID | Источник | Что взято |
+|---|---|---|
+| CP1 | [D-Tools Cloud Pricing](https://www.d-tools.com/cloud-pricing) | Solo бесплатно, платные тарифы от $149/мес; Enterprise $989/мес на 20 пользователей |
+| CP2 | [Jetbuilt pricing](https://jetbuilt.com/pricing/), [Capterra](https://www.capterra.com/p/149371/Jetbuilt/pricing/) | Lite около $67–69/мес плюс модули; ИИ-чертежи от $45/мес. Отзыв: «very US centric», нет Xero; нет живого факта затрат после договора ([Software Advice](https://www.softwareadvice.com.au/software/457803/Jetbuilt)) |
+| CP3 | [XTEN-AV на Capterra](https://www.capterra.com/p/10008832/XTEN-AV/pricing/), [ToolMage](https://www.toolmage.com/en/tool/xtenav/) | Около $104–139 за пользователя в месяц; X-DRAW, X-DOC, X-PRO, агент XAVIA |
+
+Решения: позиционирование MVP-SPEC §2.2 переписано по U14; состав и группы стадий записаны в MVP-SPEC §4.1, ведущие роли и условия переходов — H. Доступность этих сервисов в СНГ и Узбекистане не проверялась. Код не менялся, ничего не запускалось.
