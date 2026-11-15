@@ -7,7 +7,7 @@ app_license = "Proprietary"
 required_apps = ["erpnext"]
 before_install = "av_platform.install.before_install"
 after_install = "av_platform.install.after_install"
-after_migrate = "av_platform.pm_board.ensure_setup"
+after_migrate = ["av_platform.pm_board.ensure_setup", "av_platform.overview.ensure_setup"]
 
 # Desk is the product shell (ADR-004): the app has its own rail (dock/), sidebars and Desk
 # pages; the role screens are Vue apps mounted in those pages (av_platform/desk.py).

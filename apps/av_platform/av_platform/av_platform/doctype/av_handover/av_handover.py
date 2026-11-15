@@ -3,6 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 from av_platform.commercial import build_snapshot, serialize_snapshot, snapshot_digest
+from av_platform.permissions import HANDOVER_PROJECT_FLAG
 from av_platform.versions import is_current_version
 
 _REVIEW_CAPABILITY = object()
@@ -98,10 +99,16 @@ def review_handover(name: str, decision: str, note: str = ""):
                 frappe.throw("A newer issued version supersedes this quotation. "
                              "Return the handover so Sales can hand over the current version.")
             # No early commit: project and review record share the Frappe transaction.
-            project = frappe.get_doc({
-                "doctype": "Project", "project_name": handover.project_name,
-                "company": handover.company, "customer": handover.customer, "status": "Open",
-            }).insert()  # Standard ERPNext create permission is mandatory.
+            # The PM still needs the standard ERPNext create permission; the flag is the only way
+            # past the PRJ-01 rule that closes every other way of creating a project.
+            frappe.flags[HANDOVER_PROJECT_FLAG] = handover.name
+            try:
+                project = frappe.get_doc({
+                    "doctype": "Project", "project_name": handover.project_name,
+                    "company": handover.company, "customer": handover.customer, "status": "Open",
+                }).insert()
+            finally:
+                frappe.flags[HANDOVER_PROJECT_FLAG] = None
             # Project.users is permlevel 1 in ERPNext: for a Projects User it was silently dropped.
             # The assigned PM's membership is part of this decision, so the server records it;
             # task and project access follows membership (permissions.py).

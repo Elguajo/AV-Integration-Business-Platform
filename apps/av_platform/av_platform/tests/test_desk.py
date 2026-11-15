@@ -11,7 +11,11 @@ from frappe.website.utils import get_home_page
 from av_platform.desk import boot_session, desk_assets, has_app_permission, home_page, set_default_app
 from av_platform.www.av import get_context as av_entry
 
+HOME_ROLES = {"AV Director", "System Manager", "AV Project Manager", "Projects Manager"}
 PAGES = {
+    "av-overview": HOME_ROLES,
+    "av-projects": HOME_ROLES | {"Projects User"},
+    "av-project": HOME_ROLES | {"Projects User"},
     "av-quotations": {"AV Sales", "System Manager"},
     "av-work-board": {"Projects User", "Projects Manager", "System Manager"},
     "av-my-tasks": {"Projects User", "Projects Manager", "System Manager"},
@@ -53,10 +57,24 @@ class TestDeskShell(IntegrationTestCase):
     def test_rail_and_sidebars_are_installed(self):
         self.assertTrue(frappe.db.exists("Sidebar", "AV Sales"))
         self.assertTrue(frappe.db.exists("Sidebar", "AV Projects"))
+        self.assertTrue(frappe.db.exists("Sidebar", "AV Overview"))
         dock = frappe.get_all("Dock", filters={"app": "av_platform", "standard": 1}, pluck="name")
         self.assertEqual(len(dock), 1)
         targets = frappe.get_all("Dock Item", filters={"parent": dock[0]}, pluck="link_to")
-        self.assertEqual(set(targets), {"AV Sales", "AV Projects"})
+        self.assertEqual(set(targets), {"AV Overview", "AV Sales", "AV Projects"})
+
+    def test_menus_lead_with_av_screens_and_keep_desk_lists_as_reference(self):
+        # UI-03: the AV screens come first; raw Desk lists sit in the collapsed «Справочники» group.
+        projects = frappe.get_doc("Sidebar", "AV Projects").items
+        self.assertEqual([(i.link_type, i.link_to) for i in projects[:3]],
+                         [("Page", "av-projects"), ("Page", "av-work-board"), ("Page", "av-my-tasks")])
+        section = next(i for i in projects if i.type == "Section Break")
+        self.assertEqual(section.label, "Справочники")
+        self.assertTrue(all(i.child for i in projects[projects.index(section) + 1:]))
+        sales = frappe.get_doc("Sidebar", "AV Sales").items
+        self.assertEqual((sales[0].link_type, sales[0].link_to), ("Page", "av-quotations"))
+        home = frappe.get_all("Dock Item", filters={"link_to": "AV Overview"}, pluck="title")
+        self.assertEqual(home, ["Главная"])
 
     def test_apps_screen_needs_a_role_of_the_screens(self):
         user = "av-desk-no-role@av-prototype.invalid"
@@ -88,6 +106,8 @@ class TestStartPage(IntegrationTestCase):
     PM = "av-desk-pm@av-prototype.invalid"
     BOTH = "av-desk-both@av-prototype.invalid"
     NONE = "av-desk-none@av-prototype.invalid"
+    DIRECTOR = "av-desk-director@av-prototype.invalid"
+    INSTALLER = "av-desk-installer@av-prototype.invalid"
 
     @classmethod
     def setUpClass(cls):
@@ -97,6 +117,10 @@ class TestStartPage(IntegrationTestCase):
             cls.SALES: ["Sales User", "AV Sales"],
             cls.PM: ["Projects User", "AV Project Manager"],
             cls.BOTH: ["Projects User", "AV Sales"],
+            # A field user without the PM role keeps the list of works.
+            cls.INSTALLER: ["Projects User"],
+            # The director's overview wins over the other screens of the same person.
+            cls.DIRECTOR: ["AV Director", "AV Sales"],
             # A desk user outside AV Platform keeps Frappe's own start page.
             cls.NONE: ["Accounts User"],
         }.items():
@@ -113,13 +137,16 @@ class TestStartPage(IntegrationTestCase):
 
     def test_each_role_has_its_start_page(self):
         self.assertEqual(home_page(self.SALES), "desk/av-quotations")
-        self.assertEqual(home_page(self.PM), "desk/av-my-tasks")
+        self.assertEqual(home_page(self.PM), "desk/av-overview")
+        self.assertEqual(home_page(self.INSTALLER), "desk/av-my-tasks")
         self.assertEqual(home_page(self.BOTH), "desk/av-quotations")
+        self.assertEqual(home_page(self.DIRECTOR), "desk/av-overview")
         self.assertIsNone(home_page(self.NONE))
 
     def test_login_lands_on_the_role_start_page(self):
         # get_home_page is what the login response sends a desk user to.
-        for user, expected in {self.SALES: "desk/av-quotations", self.PM: "desk/av-my-tasks"}.items():
+        for user, expected in {self.SALES: "desk/av-quotations", self.PM: "desk/av-overview",
+                               self.INSTALLER: "desk/av-my-tasks"}.items():
             frappe.set_user(user)
             frappe.local.flags.home_page = None
             self.assertEqual(get_home_page(), expected, user)
@@ -129,7 +156,7 @@ class TestStartPage(IntegrationTestCase):
         self.assertNotIn("av-", get_home_page())
 
     def test_av_entry_redirects_by_role(self):
-        for user, expected in {self.SALES: "/desk/av-quotations", self.PM: "/desk/av-my-tasks",
+        for user, expected in {self.SALES: "/desk/av-quotations", self.PM: "/desk/av-overview",
                                self.NONE: "/desk", "Guest": "/login?redirect-to=/av"}.items():
             frappe.set_user(user)
             with self.assertRaises(frappe.Redirect, msg=user):

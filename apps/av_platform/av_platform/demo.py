@@ -55,6 +55,10 @@ def seed():
                   os.environ.get("AV_SALES_PASSWORD"))
     pm = _user("pm@av-prototype.invalid", "Prototype PM", ["Projects User", "AV Project Manager"],
                os.environ.get("AV_PM_PASSWORD"))
+    # Optional (DIR-01): older .runtime files and the test suite carry no director password.
+    director_password = os.environ.get("AV_DIRECTOR_PASSWORD")
+    director = (_user("director@av-prototype.invalid", "Prototype Director", ["AV Director"],
+                      director_password) if director_password else None)
     _get_or_insert("Price List", "AV Prototype USD", {
         "price_list_name": "AV Prototype USD", "selling": 1, "currency": "USD", "enabled": 1,
     })
@@ -118,7 +122,7 @@ def seed():
     frappe.db.set_single_value("System Settings", "time_zone", "Asia/Tashkent")
     frappe.db.set_single_value("System Settings", "setup_complete", 1)
     return {"synthetic": True, "quotations": quotes, "handover": handover.name,
-            "sales_user": sales, "pm_user": pm, "accepted_value": 16000,
+            "sales_user": sales, "pm_user": pm, "director_user": director, "accepted_value": 16000,
             "review_status": handover.review_status, "board_project": board_project}
 
 

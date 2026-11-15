@@ -1,9 +1,11 @@
-"""TP-02: tasks and projects are open to their participants only, in every channel."""
+"""TP-02: tasks and projects are open to their participants only, in every channel.
+PRJ-01: projects are created only by accepting a Sales handover."""
 
 import os
 from unittest.mock import patch
 
 import frappe
+import frappe.client
 from frappe.desk.form import assign_to
 from frappe.desk.search import search_link
 from frappe.tests import IntegrationTestCase
@@ -130,6 +132,35 @@ class TestProjectAccess(IntegrationTestCase):
             doc.save()
         self.assertNotIn(self.outsider, frappe.get_all("Project User", filters={"parent": self.project},
                                                         pluck="user"))
+
+    def test_project_is_not_created_by_hand(self):
+        # PRJ-01: a project appears only when the PM accepts a handover. The Desk form, data import
+        # and duplicate insert through the same check as POST /api/resource/Project (frappe.client).
+        for user in (self.member, self.manager, self.assignee):
+            frappe.set_user(user)
+            with self.assertRaises(frappe.PermissionError, msg=user):
+                frappe.get_doc({"doctype": "Project", "project_name": "Manual " + frappe.generate_hash(length=6),
+                                "company": self.company, "status": "Open"}).insert()
+            with self.assertRaises(frappe.PermissionError, msg=user):
+                frappe.client.insert({"doctype": "Project", "project_name": "API " + frappe.generate_hash(length=6),
+                                      "company": self.company, "status": "Open"})
+            with self.assertRaises(frappe.PermissionError, msg=user):
+                frappe.copy_doc(frappe.get_doc("Project", self.project)).insert()
+
+    def test_administrators_still_create_projects(self):
+        # ERPNext gives create on Project to project roles only; a System Manager also holds one.
+        admin = self._user("System Manager", "Projects Manager")
+        frappe.set_user(admin)
+        created = frappe.get_doc({"doctype": "Project", "project_name": "Setup " + frappe.generate_hash(length=6),
+                                  "company": self.company, "status": "Open"}).insert().name
+        self.assertTrue(frappe.db.exists("Project", created))
+
+    def test_existing_projects_stay_editable_by_members(self):
+        frappe.set_user(self.member)
+        doc = frappe.get_doc("Project", self.project)
+        doc.notes = "Synthetic note"
+        doc.save()
+        self.assertEqual(frappe.db.get_value("Project", self.project, "notes"), "Synthetic note")
 
     def test_own_task_without_project_stays_visible_to_its_author(self):
         frappe.set_user(self.outsider)

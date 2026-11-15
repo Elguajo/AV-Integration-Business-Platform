@@ -66,7 +66,7 @@ def _existing_handover_quotations(quotation_names):
     ))
 
 
-def _with_stages(quotes):
+def with_stages(quotes):
     names = [q.name for q in quotes]
     visible = _visible_handovers(names)
     existing = _existing_handover_quotations(names)
@@ -98,7 +98,7 @@ def get_workspace():
     )
     return {
         "user": {"name": frappe.session.user, "full_name": _user_label(frappe.session.user)},
-        "quotations": _with_stages(quotes),
+        "quotations": with_stages(quotes),
     }
 
 

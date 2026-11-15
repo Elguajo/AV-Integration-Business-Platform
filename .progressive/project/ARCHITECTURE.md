@@ -33,7 +33,7 @@ av_platform (ассистент) → шлюз моделей (OpenAI-совме�
 ## Current state (observed in repository)
 - Реализован только срез Sales → PM: DocType `AV Handover`, `commercial.py`, `permissions.py`; зависит от ERPNext (`required_apps = ["erpnext"]`), использует Quotation и Project.
 - Образ `frappe/erpnext:v16.53.0` по digest, MariaDB 11.8.3, Redis 7.4.6; фактическая версия Frappe в образе — 16.55.1. Runtime запущен 12.11.2026 (TP-01: up, seed, 11 Frappe-тестов — PASS; restore, браузер, конкурентность — NOT RUN).
-- Экраны ролей (доска предложений, доска работ, «Мои задачи») — Vue 3 + frappe-ui в страницах Desk `av-quotations`, `av-work-board`, `av-my-tasks`; меню `AV Sales` и `AV Projects`, иконки в панели модулей (`av_platform/dock`, `av_platform/av_platform/sidebar`). Бандл собирается Vite в `public/frontend`, путь передаётся при входе (`av_platform/desk.py`).
+- Экраны ролей (обзор руководителя, доска предложений, доска работ, «Мои задачи») — Vue 3 + frappe-ui в страницах Desk `av-overview`, `av-quotations`, `av-work-board`, `av-my-tasks`; меню `AV Overview`, `AV Sales` и `AV Projects`, иконки в панели модулей (`av_platform/dock`, `av_platform/av_platform/sidebar`). Бандл собирается Vite в `public/frontend`, путь передаётся при входе (`av_platform/desk.py`).
 - Hocuspocus, MCP, шлюза моделей и ассистента пока нет (ADR-005 — Specified).
 
 ## Sources of truth

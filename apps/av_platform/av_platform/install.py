@@ -1,5 +1,6 @@
 import frappe
 
+from av_platform import overview
 from av_platform.desk import set_default_app
 from av_platform.pm_board import ensure_setup
 
@@ -14,4 +15,5 @@ def before_install():
 
 def after_install():
     ensure_setup()
+    overview.ensure_setup()
     set_default_app()

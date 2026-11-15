@@ -11,14 +11,17 @@ $composeFile = Join-Path $PSScriptRoot 'compose.yml'
 
 function Prepare-Environment {
     New-Item -ItemType Directory -Force $runtimeDir | Out-Null
-    if (-not (Test-Path -LiteralPath $envFile)) {
-        $lines = foreach ($name in @('DB_ROOT_PASSWORD','ADMIN_PASSWORD','AV_SALES_PASSWORD','AV_PM_PASSWORD')) {
-            $secret = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
-            "$name=$secret"
-        }
-        [IO.File]::WriteAllLines($envFile, $lines, [Text.UTF8Encoding]::new($false))
+    $existing = @()
+    if (Test-Path -LiteralPath $envFile) {
+        $existing = @(Get-Content -LiteralPath $envFile | ForEach-Object { $_.Split('=', 2)[0] })
     }
-    Write-Output 'Local prototype settings prepared. Existing passwords preserved.'
+    # Keys added later (AV_DIRECTOR_PASSWORD, DIR-01) are appended; existing passwords never change.
+    $lines = foreach ($name in @('DB_ROOT_PASSWORD','ADMIN_PASSWORD','AV_SALES_PASSWORD','AV_PM_PASSWORD','AV_DIRECTOR_PASSWORD')) {
+        if ($name -in $existing) { continue }
+        $secret = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
+        "$name=$secret"
+    }
+    if ($lines) { [IO.File]::AppendAllLines($envFile, [string[]]$lines, [Text.UTF8Encoding]::new($false)) }
 }
 
 function Find-Docker {
@@ -38,9 +41,13 @@ function Compose {
     if ($LASTEXITCODE -ne 0) { throw "Docker Compose failed (exit $LASTEXITCODE)." }
 }
 
-if ($Action -eq 'prepare') { Prepare-Environment; return }
+if ($Action -eq 'prepare') {
+    Prepare-Environment
+    Write-Output 'Local prototype settings prepared. Existing passwords preserved.'
+    return
+}
 $dockerExe = Find-Docker
-if (-not (Test-Path -LiteralPath $envFile)) { Prepare-Environment }
+Prepare-Environment
 if ($Action -eq 'check') {
     & $dockerExe --version
     & $dockerExe compose version
@@ -62,13 +69,13 @@ if ($Action -eq 'seed') {
     try {
         foreach ($line in Get-Content -LiteralPath $envFile) {
             $name, $value = $line.Split('=', 2)
-            if ($name -in @('AV_SALES_PASSWORD', 'AV_PM_PASSWORD')) {
+            if ($name -in @('AV_SALES_PASSWORD', 'AV_PM_PASSWORD', 'AV_DIRECTOR_PASSWORD')) {
                 [Environment]::SetEnvironmentVariable($name, $value, 'Process')
             }
         }
-        Compose exec -T -e AV_SALES_PASSWORD -e AV_PM_PASSWORD backend bench --site av.localhost execute av_platform.demo.seed
+        Compose exec -T -e AV_SALES_PASSWORD -e AV_PM_PASSWORD -e AV_DIRECTOR_PASSWORD backend bench --site av.localhost execute av_platform.demo.seed
     } finally {
-        Remove-Item Env:AV_SALES_PASSWORD,Env:AV_PM_PASSWORD -ErrorAction SilentlyContinue
+        Remove-Item Env:AV_SALES_PASSWORD,Env:AV_PM_PASSWORD,Env:AV_DIRECTOR_PASSWORD -ErrorAction SilentlyContinue
     }
 }
 if ($Action -eq 'test') {

@@ -5,8 +5,9 @@ import { FrappeUIProvider, portalTargetKey } from 'frappe-ui'
 import './style.css'
 import { ru } from './i18n/ru'
 import { ruPm } from './i18n/pm'
+import { ruOverview } from './i18n/overview'
 
-export type View = 'sales' | 'board' | 'my-tasks'
+export type View = 'sales' | 'board' | 'my-tasks' | 'overview' | 'projects' | 'project'
 
 interface JQueryLike {
   get(index: number): HTMLElement
@@ -40,6 +41,9 @@ const VIEWS: Record<View, { title: string; load: () => Promise<PageModule> }> = 
   sales: { title: ru.page.title, load: () => import('./pages/SalesWorkspace.vue') },
   board: { title: ruPm.page.title, load: () => import('./pages/ProjectBoard.vue') },
   'my-tasks': { title: ruPm.my.title, load: () => import('./pages/MyTasks.vue') },
+  overview: { title: ruOverview.title, load: () => import('./pages/Overview.vue') },
+  projects: { title: ruOverview.register.title, load: () => import('./pages/Projects.vue') },
+  project: { title: ruOverview.card.title, load: () => import('./pages/ProjectCard.vue') },
 }
 
 function loadStyles(hrefs: string[]) {
@@ -89,14 +93,17 @@ async function mountPage(wrapper: HTMLElement, pageName: string, view: View) {
   })
 
   const component = (await VIEWS[view].load()).default
-  const props = () =>
-    view === 'sales'
-      ? {
-          quotation: route.args[0],
-          onNavigate: (quotation?: string) =>
-            quotation ? frappe.set_route(pageName, quotation) : frappe.set_route(pageName),
-        }
-      : {}
+  const props = () => {
+    if (view === 'sales') {
+      return {
+        quotation: route.args[0],
+        onNavigate: (quotation?: string) =>
+          quotation ? frappe.set_route(pageName, quotation) : frappe.set_route(pageName),
+      }
+    }
+    if (view === 'project') return { project: route.args[0] }
+    return {}
+  }
 
   const app = createApp({
     render: () => h(FrappeUIProvider, null, { default: () => h(component, props()) }),

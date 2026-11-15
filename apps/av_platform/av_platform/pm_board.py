@@ -16,9 +16,13 @@ DEFAULT_STAGES = (
     ("done", "Завершено", 50, "Completed"),
 )
 
-# Roles that see every project on the board. Everyone else sees the projects where they are
-# listed in Project.users and the tasks assigned to them.
+# Roles that see and, within their DocType rules, change every project. Everyone else sees the
+# projects where they are listed in Project.users and the tasks assigned to them.
 ALL_PROJECTS_ROLES = {"System Manager", "Projects Manager"}
+# Read-only overview roles (DIR-01): they read every project and task, but any other action still
+# follows participation. So a person who also holds Projects User gains no write access through them.
+READ_ALL_PROJECTS_ROLES = {"AV Director"}
+READ_PERMISSION_TYPES = {"read", "select", "report", "print"}
 
 TASK_FIELDS = {
     "Task": [
@@ -96,6 +100,11 @@ def sees_all_projects(user=None):
     return user == "Administrator" or bool(ALL_PROJECTS_ROLES & set(frappe.get_roles(user)))
 
 
+def reads_all_projects(user=None):
+    user = user or frappe.session.user
+    return sees_all_projects(user) or bool(READ_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)))
+
+
 def member_projects(user=None):
     user = user or frappe.session.user
     return frappe.get_all("Project User", filters={"user": user, "parenttype": "Project"},
@@ -112,7 +121,7 @@ def assigned_tasks(user=None):
 def can_see_task(task, user=None):
     """Board visibility on top of the standard Frappe permission checks (never instead of them)."""
     user = user or frappe.session.user
-    if sees_all_projects(user):
+    if reads_all_projects(user):
         return True
     return (task.owner == user or (task.project and task.project in member_projects(user))
             or task.name in assigned_tasks(user))
