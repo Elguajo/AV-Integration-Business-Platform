@@ -168,6 +168,7 @@ function amounts(totals: Amount[]) {
               {{ t.homeProjects.all }}
             </a>
           </div>
+          <p class="px-4 pb-3 text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
           <p v-if="!allRows.length" class="px-4 pb-6 pt-2 text-p-sm text-ink-gray-5">{{ t.projects.empty }}</p>
           <p v-else-if="!rows.length" class="px-4 pb-6 pt-2 text-p-sm text-ink-gray-5">{{ t.homeProjects.emptyMine }}</p>
           <ProjectTable v-else :rows="rows.slice(0, HOME_ROWS)" :money-visible="data.data.money_visible" compact />

@@ -410,11 +410,11 @@ def get_project(project: str):
     _require(PROJECT_ROLES)
     current_day = getdate(today())
     doc = _readable_project(project)
-    tasks = _project_tasks([doc.name], limit=CARD_TASK_LIMIT + 1)
-    truncated = len(tasks) > CARD_TASK_LIMIT
-    tasks = tasks[:CARD_TASK_LIMIT]
+    # The display limit must not hide blockers or alter the project's summary.
+    tasks = _project_tasks([doc.name])
     rows, by_project, people, basis = _project_rows([doc], current_day, tasks)
     works = [t for t in by_project.get(doc.name, []) if not t.is_group]
+    truncated = len(works) > CARD_TASK_LIMIT
     open_works = [t for t in works if t.status not in CLOSED]
 
     def by_end(task):
@@ -435,7 +435,7 @@ def get_project(project: str):
                                  if handover else None)},
         "stages": [{"name": s.name, "label": s.label, "is_closed": bool(s.is_closed)}
                    for s in enabled_stages()],
-        "works": [_work(t, people, current_day) for t in works],
+        "works": [_work(t, people, current_day) for t in works[:CARD_TASK_LIMIT]],
         "works_truncated": truncated,
         "obstacles": [{**_work(t, people, current_day),
                        "kind": "blocked" if t.av_block_reason else "overdue"} for t in obstacles],

@@ -128,6 +128,8 @@ function workStatus(work: Work) {
           <Button icon="lucide-refresh-cw" :tooltip="t.refresh" :aria-label="t.refresh" :loading="data.loading" @click="data.reload()" />
         </template>
 
+        <p class="text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
+
         <!-- Overview -->
         <template v-if="section === 'overview'">
           <div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
@@ -150,7 +152,7 @@ function workStatus(work: Work) {
             </div>
           </div>
 
-          <div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-3">
+          <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
             <section class="rounded-6 border border-outline-gray-2 p-3">
               <h2 class="mb-2 text-p-base font-semibold text-ink-gray-9">{{ t.card.basis }}</h2>
               <template v-if="!card.money_visible">

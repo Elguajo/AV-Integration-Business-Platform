@@ -108,6 +108,7 @@ function toggleStatus(value: ProjectStatus) {
       </div>
 
       <template v-else-if="data.data">
+        <p class="text-p-sm text-ink-gray-6">{{ t.statusScope }}</p>
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" :aria-label="t.register.status">
           <button
             v-for="s in STATUSES"

@@ -239,6 +239,51 @@ class TestOverviewAPI(IntegrationTestCase):
         self.assertEqual(card["project"]["works"], {"done": 1, "total": 4})
         self.assertIsNone(next(w for w in card["works"] if w["name"] == done)["bucket"])
 
+    def test_project_card_summarizes_works_beyond_the_display_limit(self):
+        pm = self.demo["pm_user"]
+        now = getdate(today())
+        project = self._project("Card beyond display limit", users=[pm])
+        completed = []
+        for index in range(2):
+            name = self._task(project, f"Completed work {index}", assignee=pm,
+                              exp_end_date=add_days(now, index + 1))
+            frappe.db.set_value("Task", name, "status", "Completed")
+            completed.append(name)
+        late = self._task(project, "Blocked acceptance milestone", assignee=pm,
+                          exp_end_date=add_days(now, 3), is_milestone=1,
+                          av_block_reason="Client access is not confirmed")
+        frappe.set_user(pm)
+        # A smaller cap exercises the production query and summary without hundreds of inserts.
+        with patch("av_platform.overview.CARD_TASK_LIMIT", 2):
+            card = get_project(project)
+        self.assertTrue(card["works_truncated"])
+        self.assertEqual([w["name"] for w in card["works"]], completed)
+        self.assertEqual(card["project"]["works"], {"done": 2, "total": 3})
+        self.assertEqual(card["project"]["status"], "problem")
+        self.assertEqual(codes(card["project"]["reasons"]), {"blocked": 1, "milestone_soon": 1})
+        self.assertEqual(card["project"]["obstacle"]["name"], late)
+        self.assertEqual(card["project"]["next_milestone"]["name"], late)
+        self.assertEqual([o["name"] for o in card["obstacles"]], [late])
+        self.assertEqual([m["name"] for m in card["milestones"]], [late])
+        self.assertEqual([w["name"] for w in card["my_works"]], [late])
+        row = self._row(get_projects(), project)
+        for field in ("works", "status", "reasons", "obstacle", "next_milestone"):
+            self.assertEqual(card["project"][field], row[field], field)
+
+    def test_project_card_groups_do_not_use_the_works_display_limit(self):
+        pm = self.demo["pm_user"]
+        now = getdate(today())
+        project = self._project("Card groups and display limit", users=[pm])
+        self._task(project, "Work group", is_group=1, exp_end_date=add_days(now, 1))
+        works = [self._task(project, f"Work {index}", assignee=pm,
+                            exp_end_date=add_days(now, index + 2)) for index in range(2)]
+        frappe.set_user(pm)
+        with patch("av_platform.overview.CARD_TASK_LIMIT", 2):
+            card = get_project(project)
+        self.assertEqual([w["name"] for w in card["works"]], works)
+        self.assertFalse(card["works_truncated"])
+        self.assertEqual(card["project"]["works"], {"done": 0, "total": 2})
+
     def test_director_reads_everything_and_changes_nothing(self):
         project = self._project("Not a member")
         work = self._task(project, "Rack wiring")
