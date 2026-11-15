@@ -8,6 +8,7 @@ Outcome: IN PROGRESS
 Phase 00 — Technical Proof (TP Gate)
 
 ## Completed this session
+- ADM-01 (15.11.2026, «Надо б создать роль модератора и администратора системы»): `user_admin.py` — AV Administrator всегда с System Manager; AV Moderator ведёт учётные записи сотрудников и выдаёт только рабочие роли, проверка в `User.before_validate`. 125/125 Frappe-тестов, access-check 0 утечек; браузер NOT RUN (prototype/README.md, раздел ADM-01).
 - PRJ-01 (15.11.2026, «Да, закрыть», задание prj-01-r1): проект создаётся только при принятии передачи PM; Desk-форма, REST, импорт и копирование отклоняются сервером (`permissions.project_permission`), кроме Administrator и System Manager с проектной ролью. 110/110 Frappe-тестов, access-check 0 утечек, concurrency-check C1–C7 PASS.
 - UI-03 (15.11.2026, «Давай сразу менять интерфейс осевого приложения», задание ui-03-r1): композиция D-Tools Cloud без их фирменного вида (research/12 §6). «Главная» для руководителя и PM (воронка — только руководителю), реестр «Все проекты» (список и Kanban по состоянию), карточка проекта `av-project/<проект>` с панелью разделов, деревом этапов и боковой панелью; общие компоненты RegisterHeader и RecordShell; меню со «Справочниками»; PM после входа — на «Главной». 107/107 Frappe-тестов, access-check 0 утечек, браузер под PM, 1366 и 375 px (prototype/README.md, раздел UI-03).
 - Пакет D-Tools (15.11.2026): разбор и проверка по первоисточникам — research/04 §18 (DT1–DT11), research/12. Ориентир интерфейса — D-Tools Cloud (слова пользователя в research/12 §6.2б).

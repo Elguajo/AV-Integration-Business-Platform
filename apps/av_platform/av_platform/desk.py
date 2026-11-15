@@ -12,13 +12,16 @@ import frappe
 
 ASSET_BASE = "/assets/av_platform/frontend/"
 ENTRY = "src/desk.ts"
-DESK_ROLES = {"System Manager", "AV Sales", "Projects User", "Projects Manager", "AV Director"}
+DESK_ROLES = {"System Manager", "AV Sales", "Projects User", "Projects Manager", "AV Director",
+              "AV Administrator", "AV Moderator"}
 # Where each role starts after login, in priority order (first match wins).
 LANDING = (
     ({"AV Director"}, "desk/av-overview"),
     ({"AV Sales"}, "desk/av-quotations"),
     ({"Projects Manager", "AV Project Manager"}, "desk/av-overview"),
     ({"Projects User"}, "desk/av-my-tasks"),
+    # ADM-01: a moderator without a work role starts in the staff list.
+    ({"AV Moderator"}, "desk/user"),
 )
 
 
